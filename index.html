@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Channeling Hans</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
+    <script src="d3/d3.v4.js"></script>
+</head>
+
+<body>
+    <script>
+        // Define margins
+        var margin = {
+            top: 10,
+            right: 10,
+            bottom: 25,
+            left: 25
+        };
+        var legend_width = 350;
+        var control_height = 100;
+        var sliderWidth = 500;
+
+        //Width and height
+        var outer_width = 1200;
+        var outer_height = 750;
+        var plot_width = outer_width - margin.left - margin.right - legend_width;
+        var plot_height = outer_height - margin.top - margin.bottom - control_height;
+
+        // Set up the scale to be used on the x axis
+        var xScale = d3.scaleLog()
+            .range([0, plot_width]);
+
+        // Set up the scale to be used on the y axis
+        var yScale = d3.scaleLinear()
+            .range([plot_height, 0]);
+
+        // Create an x-axis connected to the x scale
+        var xAxis = d3.axisBottom()
+            .scale(xScale)
+            .ticks(5);
+
+        //Define Y axis
+        var yAxis = d3.axisLeft()
+            .scale(yScale)
+            .ticks(5);
+
+        var canvas = d3.select("body")
+            .insert("svg", ":first-child")
+            .attr("width", outer_width)
+            .attr("height", outer_height);
+        var plot = canvas.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        var plotPoints = plot.append("g");
+        var historyPoints = plot.append("g");
+        var historyLabels = plot.append("g");
+        var plotLabels = plot.append("g");
+
+
+        const ColorPalett = ['#7fc97f', '#beaed4', '#fdc086', '#ffff99', '#386cb0', '#f0027f', '#bf5b17'];
+
+
+        class Country {
+            constructor(entries) {
+                this.region = entries[0]['Region'];
+                this.income_group = entries[0]['Income group'];
+                this.classification = entries[0]['Forum classification'];
+                this.name = entries[0]['Country'];
+                this.yearlyData = {}
+                this._selected = false;
+                entries.forEach(entry => {
+                    var year = entry['Year']
+                    this.yearlyData[year] = {
+                        year: parseInt(year),
+                        population: parseInt(entry['Population']),
+                        gdp: parseInt(entry['GDP']),
+                        global_competitiveness: parseFloat(entry['Global_Competitiveness_Index']),
+                        pillars: {}
+                    }
+                    for (var key in entry) {
+                        if (key.includes('_pillar_')) {
+                            this.yearlyData[year].pillars[key] = parseFloat(entry[key]);
+                        }
+                    }
+                });
+            }
+
+            get circle() {
+                return d3.select("#" + this.circleId);
+            }
+
+            get label() {
+                return d3.select("#" + this.labelId);
+            }
+
+            get selected() {
+                return this._selected;
+            }
+
+            set selected(value) {
+                this.circle.classed('selected', value);
+                this.label.classed('selected', value);
+                this._selected = value;
+                this.showHistory = value;
+            }
+
+            set showHistory(value) {
+                var points = historyPoints.selectAll("circle")
+                    .data(Object.values(this.yearlyData), data => this.name + data.year);
+                var labels = historyLabels.selectAll("text")
+                    .data(Object.values(this.yearlyData), data => this.name + data.year);
+                if (!value) {
+                    points.remove();
+                    labels.remove();
+                    return;
+                }
+                points.enter()
+                    .append("circle")
+                    .attr("id", data => this.circleId + data.year)
+                    .attr("transform", data => this.transform(data.year))
+                    .classed("country-circle", true)
+                    .classed("country-history", true)
+                    .on("mouseover", data => this.overHistory(data))
+                    .on("mouseout", data => this.outHistory(data))
+                    .on("click", () => this.selected = false)
+                    .transition()
+                    .duration(500)
+                    .attr("r", data => rScale(data.population))
+                    .style("opacity", data => (data.year-minYear)/(maxYear-minYear)/2+0.3)
+                    .style("fill", colorMap[this.classification]);
+                labels.enter()
+                    .append("text")
+                    .attr("id", data => this.labelId + data.year)
+                    .text(data => this.name + " " + data.year)
+                    .attr("transform", data => this.transform(data.year))
+                    .classed("country-label", true)
+                    .classed("country-history", true);
+            }
+
+            overHistory(data) {
+                d3.select("#" + this.labelId + data.year)
+                    .classed("hovered", true);
+            }
+
+            outHistory(data) {
+                historyLabels.selectAll("text").classed("hovered", false);
+            }
+
+            get circleId() {
+                return 'circle_' + this.name.replace(/[^a-zA-Z]/g, "");
+            }
+
+            get labelId() {
+                return 'label_' + this.name.replace(/[^a-zA-Z]/g, "");
+            }
+
+            transform(year) {
+                return "translate(" + xScale(this.getGdp(year)) + "," + yScale(this.getCompetitiveness(
+                    year)) + ")";
+            }
+
+
+            getCompetitiveness(year) {
+                return this.yearlyData[year].global_competitiveness;
+            }
+
+            getPopulation(year) {
+                return this.yearlyData[year].population;
+            }
+
+            getGdp(year) {
+                return this.yearlyData[year].gdp;
+            }
+
+            getMax(key) {
+                var max = -1;
+                for (var year in this.yearlyData) {
+                    if (this.yearlyData[year][key] > max) {
+                        max = this.yearlyData[year][key];
+                    }
+                }
+                return max;
+            }
+
+            getMin(key) {
+                var min = -1;
+                for (var year in this.yearlyData) {
+                    if (!isNaN(this.yearlyData[year][key]) && (this.yearlyData[year][key] < min || min == -1)) {
+                        min = this.yearlyData[year][key];
+                    }
+                }
+                return min;
+            }
+
+            isDataComplete(year) {
+                if (year in this.yearlyData) {
+                    var data = this.yearlyData[year];
+                    return !isNaN(data.global_competitiveness) && !isNaN(data.gdp) && !isNaN(data.population);
+                } {
+                    return false;
+                }
+            }
+        }
+
+        function getMin(countries, key) {
+            return Math.min(...countries.map(country => country.getMin(key)));
+        }
+
+        function getMax(countries, key) {
+            return Math.max(...countries.map(country => country.getMax(key)));
+        }
+
+        function groupBy(array, key) {
+            return array.reduce(function (rv, x) {
+                (rv[x[key]] = rv[x[key]] || []).push(x);
+                return rv;
+            }, {});
+        };
+
+        function onlyUnique(value, index, self) {
+            return self.indexOf(value) === index;
+        }
+
+        var minComp, maxComp, minGdp, maxGdp, minYear, maxYear, year, yearScale, controlHandle, playButton;
+        var countries;
+        var colorMap = {};
+
+        d3.csv('./GCI_CompleteData2.csv', data => {
+            var grouped = groupBy(data, 'Country');
+            countries = []
+            for (var name in grouped) {
+                countries.push(new Country(grouped[name]));
+            }
+
+            minGdp = getMin(countries, 'gdp');
+            maxGdp = getMax(countries, 'gdp');
+            minGdp = 100;
+            maxGdp = 4000000;
+            minComp = getMin(countries, 'global_competitiveness');
+            maxComp = getMax(countries, 'global_competitiveness');
+            minComp = 2.5;
+            maxComp = 6;
+            minYear = getMin(countries, 'year');
+            maxYear = getMax(countries, 'year');
+            // console.log(minComp, maxComp, minGdp, maxGdp);
+            // console.log(xScale(maxGdp))
+
+            // Setting up the axis
+            xScale.domain([minGdp, maxGdp]);
+            yScale.domain([minComp, maxComp]);
+
+            // Create the x-axis
+            plot.append("g")
+                .attr("class", "axis")
+                .attr("id", "x-axis")
+                .attr("transform", "translate(0," + plot_height + ")")
+                .call(xAxis);
+
+            // Create the y axis
+            plot.append("g")
+                .attr("class", "axis")
+                .attr("id", "y-axis")
+                .call(yAxis);
+
+            // Setting up the colors
+            var regions = countries.map(c => c.classification).filter(onlyUnique);
+            for (var i = 0; i < regions.length; i++) {
+                colorMap[regions[i]] = ColorPalett[i];
+            }
+
+            // Build legend to the right
+            var legend = canvas.append("g")
+                .attr("transform", "translate(" + (margin.left + plot_width + 50) + "," + margin.top + ")");
+
+            var enteredLegend = legend.selectAll("g")
+                .data(regions)
+                .enter();
+
+            enteredLegend.append("circle")
+                .attr("cy", (region, i) => i * 35 + 10)
+                .attr("fill", region => colorMap[region])
+                .classed("legend-circle", true);
+
+            enteredLegend.append("text")
+                .attr("class", "legend")
+                .text(region => region)
+                .attr("y", (region, i) => i * 35 + 17)
+                .attr("x", 25);
+
+            //Setup control
+            yearScale = d3.scaleLinear()
+                .domain([minYear, maxYear])
+                .range([0, sliderWidth]);
+
+            var control = canvas.append("g")
+                .attr("transform", "translate(" + margin.left + "," + (margin.top + plot_height + 50) + ")");
+
+            var slider = control.append("g")
+                .attr("transform", "translate(" + 50 + ", 0)")
+                .classed("slider", true);
+
+            slider.append("line")
+                .attr("x1", yearScale.range()[0])
+                .attr("x1", yearScale.range()[1])
+                .call(d3.drag()
+                    .on("start drag", () => {
+                        var x = d3.event.x + yearScale.range()[1] / (maxYear - minYear) / 2;
+                        var newYear = parseInt(yearScale.invert(x));
+                        playPause(false);
+                        generateVis(newYear);
+                    }));
+
+            controlHandle = slider.append("circle");
+
+            slider.append("g")
+                .attr("transform", "translate(0," + 36 + ")")
+                .selectAll("text")
+                .data(yearScale.ticks(maxYear - minYear))
+                .enter()
+                .append("text")
+                .attr("x", yearScale)
+                .text(d => d);
+
+            playButton = control.append("g")
+                .classed("play-btn", true);
+            playButton.append("circle");
+            playButton.append("text")
+                .text("▶")
+                .on('click', () => {
+                    playPause();
+                });
+            // Drawing
+            // console.log(countries.map(country => country.getMax('gdp')));
+            generateVis(minYear);
+        });
+
+        function xScale(gdp) {
+            return plot_width * Math.log(gdp / minGdp) / Math.log(maxGdp / minGdp);
+        }
+
+        function yScale(comp) {
+            return plot_height - plot_height * (comp - minComp) / (maxComp - minComp);
+        }
+
+        function rScale(population) {
+            return Math.sqrt(population) / (1000000 / plot_width);
+        }
+
+        function getAllCircles() {
+            return plotPoints.selectAll("circle")
+                .data([])
+                .exit();
+        }
+
+        function getAllLabels() {
+            return plotLabels.selectAll("text")
+                .data([])
+                .exit();
+        }
+
+        function startHover(country) {
+            country.circle.classed("hovered", true);
+            country.label.classed("hovered", true);
+            getAllCircles().classed("blend-out", true);
+            country.circle.classed("blend-out", false);
+        }
+
+        function stopHover(country) {
+            getAllCircles()
+                .classed("hovered", false)
+                .classed("blend-out", false);
+            getAllLabels()
+                .classed("hovered", false);
+        }
+
+        var selected = undefined;
+
+        function onClickCountry(country) {
+            if (selected == country) {
+                country.selected = false;
+                selected = undefined;
+                return;
+            }
+            if (selected != undefined) {
+                selected.selected = false;
+            }
+            country.selected = true;
+            selected = country;
+        }
+
+        function generateVis(newYear) {
+            if (newYear == year || newYear < minYear || newYear > maxYear)
+                return;
+            year = newYear;
+            controlHandle.transition()
+                .duration(100)
+                .attr("cx", yearScale(year));
+
+            // console.log(year);
+            var currentCountries = countries.filter(country => country.isDataComplete(year));
+            // var currentCountries = countries;
+            // console.log(currentCountries);
+
+            var points = plotPoints.selectAll("circle")
+                .data(currentCountries, country => country.name);
+
+            // Transition old ones
+            points.attr("r", country => rScale(country.getPopulation(year)))
+                .attr("transform", country => country.transform(year));
+
+            // Add Point
+            points.enter()
+                .append("circle")
+                .attr("id", country => country.circleId)
+                .attr("transform", country => country.transform(year))
+                .classed("country-circle", true)
+                .on("mouseover", startHover)
+                .on("mouseout", stopHover)
+                .on("click", onClickCountry)
+                .transition()
+                .duration(500)
+                .attr("r", country => rScale(country.getPopulation(year)))
+                .style("fill", country => colorMap[country.classification]);
+
+            // Add Text
+            var labels = plotLabels.selectAll("text")
+                .data(currentCountries, country => country.name);
+
+            labels.attr("transform", country => country.transform(year));
+
+            labels.enter()
+                .append("text")
+                .attr("id", country => country.labelId)
+                .text(country => country.name)
+                .attr("transform", country => country.transform(year))
+                .classed("country-label", true);
+
+            if (year == minYear) {
+                points.exit()
+                    .remove();
+                labels.exit()
+                    .remove();
+            }
+        }
+
+        var timer = -1;
+
+        function playPause(play = undefined) {
+            if ((timer == -1 && play === undefined) || play === true) {
+                var nextYear = year < maxYear ? year + 1 : minYear;
+                timer = setInterval(() => {
+                    generateVis(nextYear);
+                    nextYear += 1;
+                    if (nextYear > maxYear) {
+                        playPause();
+                    }
+                }, 500);
+                playButton.select("text").text("❚❚");
+            } else {
+                clearInterval(timer);
+                timer = -1;
+                playButton.select("text").text("▶");
+            }
+        }
+    </script>
+</body>
+
+</html>

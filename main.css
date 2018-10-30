@@ -1,0 +1,82 @@
+* {
+    font-family: sans-serif;
+}
+
+.legend {
+    font-size: 1.2em;
+}
+
+.legend-circle {
+    r: 10;
+    stroke: black;
+}
+
+.slider line {
+    stroke: #ddd;
+    stroke-width: 15px;
+    stroke-linecap: round;
+    cursor: grab;
+}
+
+.slider circle {
+    fill: #66e;
+    pointer-events: stroke;
+    r: 15;
+}
+
+.slider text {
+    text-anchor: middle;
+}
+
+.play-btn text {
+    text-anchor: middle;
+    font-size: 24px;
+    transform: translate(0, 8.5px);
+    cursor: pointer;
+    fill: white;
+}
+
+.play-btn circle {
+    cx: 0;
+    cy: 0;
+    r: 20;
+    fill: #66e;
+}
+
+.country-label {
+    transition: opacity 0.2s, transform 0.2s;
+    y: 20;
+    text-anchor: middle;
+    fill-opacity: 0;
+    pointer-events: none;
+    font-weight: 800;
+}
+
+.country-circle {
+    transition: opacity 0.2s, transform 0.2s, r 0.2s;
+    cx: 0;
+    cy: 0;
+    stroke: black;
+    stroke-width: 1px;
+    opacity: 1;
+    cursor: pointer;
+}
+
+.country-label.hovered,
+.country-label.selected {
+    fill-opacity: 1;
+}
+
+.country-circle.hovered,
+.country-circle.selected {
+    stroke-width: 5px;
+    stroke: orange !important;
+}
+
+.country-circle.blend-out {
+    opacity: 0.5;
+}
+
+.country-circle.country-history {
+    /* pointer-events: stroke; */
+}
