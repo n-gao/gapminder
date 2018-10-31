@@ -12,13 +12,12 @@
 
 <body>
     <div id="visualizations">
-
     </div>
     <script>
         // Define margins
         const plot = {
-            outer_width: 750,
-            outer_height: 500,
+            outer_width: 1000,
+            outer_height: 750,
             margin: {
                 top: 10,
                 right: 10,
@@ -38,7 +37,7 @@
                 top: 10,
                 right: 25,
                 bottom: 50,
-                left: 150
+                left: 200
             },
             width: 0,
             height: 0,
@@ -419,7 +418,7 @@
         }
 
         function scaleR(population) {
-            return Math.sqrt(population) / (1000000 / plot.width);
+            return Math.sqrt(population) / (750000 / plot.width);
         }
 
         function startHover(country) {
@@ -484,7 +483,11 @@
         }
 
         function drawMainVis() {
-            var currentCountries = countries.filter(country => country.isDataComplete(year));
+            var currentCountries = countries.filter(country =>
+                    country.isDataComplete(year))
+                .sort((c1, c2) =>
+                    c2.getPopulation(year) - c1.getPopulation(year));
+
 
             var points = plotPoints.selectAll("circle")
                 .data(currentCountries, country => country.name);
@@ -528,10 +531,12 @@
 
         function drawPillars() {
             // Pillars
-            var pillarData = [].concat.apply([], selection.filter(c => year in c.yearlyData).map((country, ind) =>
-                Object.values(country.yearlyData[year].pillars).map((data, i) => {
+            var pillarData = [].concat.apply([], selection
+                .filter(c => year in c.yearlyData)
+                .map((country, ind) => Object.values(country.yearlyData[year].pillars)
+                .map((data, i) => {
                     return {
-                        country: country.name,
+                        country: country,
                         country_index: ind,
                         index: i,
                         ...data
@@ -541,7 +546,7 @@
             var nSelection = selection.length;
 
             var pillars = pillarBars.selectAll("rect")
-                .data(pillarData, p => p.pillar + p.country);
+                .data(pillarData, p => p.pillar + p.country.name);
 
             var pillarHeight = pillarPlot.height / 15 / nSelection;
 
@@ -551,7 +556,8 @@
                 .attr("x", 0)
                 .attr("y", (p, i) => p.index * pillarPlot.height / 12 + pillarHeight * p.country_index + pillarHeight *
                     nSelection / 8)
-                .attr("height", pillarHeight)
+                .attr("fill", d => colorMap[d.country.classification])
+                .attr("stroke", "black")
                 .merge(pillars) // Set attributes for all pillars
                 .transition()
                 .duration(200)

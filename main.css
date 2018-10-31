@@ -18,7 +18,7 @@ svg {
 }
 
 .legend-circle {
-    r: 10;
+    r: 7.5;
     stroke: black;
 }
 
@@ -101,4 +101,8 @@ svg {
 
 #pillar-y-axis line {
     display: none;
+}
+
+#pillar-y-axis text {
+    font-size: 1.4em;
 }
