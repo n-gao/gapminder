@@ -515,10 +515,7 @@
         function drawPillars() {
             // Pillars
             var pillarData;
-            var pillarDatas;
             if (selected != null && year in selected.yearlyData) {
-                pillarData = Object.values(selected.yearlyData[year].pillars);
-                
                 pillarData = [].concat.apply([], selection.map((country, ind) => Object.values(country.yearlyData[year].pillars).map((data, i) => {
                     return {
                         country : country.name,
@@ -529,7 +526,6 @@
                 })));
             } else {
                 pillarData = [];
-                pillarDatas = [];
             }
 
             var nSelection = selection.length;
@@ -549,7 +545,7 @@
                 .duration(200)
                 .attr("height", pillarHeight)
                 .attr("y", (p, i) => p.index * pillarPlot.height / 12 + pillarHeight*p.country_index + pillarHeight*nSelection/8)
-                .attr("width", p => p.value * pillarPlot.width / 10);
+                .attr("width", p => p.value * pillarPlot.width / highestPillar);
 
             pillars.exit()
                 .transition()
