@@ -14,6 +14,9 @@
     <div id="visualizations">
     </div>
     <script>
+        const ColorPalett = ['#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5', '#d9d9d9'];
+
+        const SelectionColors = ['#8dd3c7', '#ffffb3'];
         // Define margins
         const plot = {
             outer_width: 1000,
@@ -129,9 +132,6 @@
             .attr("transform", "translate(" + plot.legend_offset + ",0)").attr("id", "legend");
 
         var pillarBars = pillarPlot.canvas.append("g").attr("id", "pillar-bars");
-
-
-        const ColorPalett = ['#7fc97f', '#beaed4', '#fdc086', '#ffff99', '#386cb0', '#f0027f', '#bf5b17'];
 
         var highestPillar = -1;
 
@@ -421,6 +421,12 @@
             return Math.sqrt(population) / (750000 / plot.width);
         }
 
+        function strokeColor(country) {
+            return isSelected(country) ?
+                SelectionColors[selection.length - 1 - selection.indexOf(country)] :
+                "black";
+        }
+
         function startHover(country) {
             country.circle.classed("hovered", true);
             country.label.classed("hovered", true);
@@ -456,6 +462,9 @@
 
         function addSeelction(country) {
             if (!isSelected(country)) {
+                if (selection.length >= SelectionColors.length) {
+                    selection.shift();
+                }
                 selection.push(country);
                 generateVis(year, selection);
             }
@@ -505,6 +514,7 @@
                 .merge(points) // Set attributes for all bubbles
                 .attr("r", country => scaleR(country.getPopulation(year)))
                 .attr("transform", country => country.transform(year))
+                .attr("stroke", strokeColor)
                 .classed('selected', isSelected);
 
             // Add Text
@@ -534,14 +544,14 @@
             var pillarData = [].concat.apply([], selection
                 .filter(c => year in c.yearlyData)
                 .map((country, ind) => Object.values(country.yearlyData[year].pillars)
-                .map((data, i) => {
-                    return {
-                        country: country,
-                        country_index: ind,
-                        index: i,
-                        ...data
-                    };
-                })));
+                    .map((data, i) => {
+                        return {
+                            country: country,
+                            country_index: ind,
+                            index: i,
+                            ...data
+                        };
+                    })));
 
             var nSelection = selection.length;
 
@@ -556,9 +566,9 @@
                 .attr("x", 0)
                 .attr("y", (p, i) => p.index * pillarPlot.height / 12 + pillarHeight * p.country_index + pillarHeight *
                     nSelection / 8)
-                .attr("fill", d => colorMap[d.country.classification])
                 .attr("stroke", "black")
                 .merge(pillars) // Set attributes for all pillars
+                .attr("fill", d => strokeColor(d.country))
                 .transition()
                 .duration(200)
                 .attr("height", pillarHeight)
@@ -574,6 +584,7 @@
         }
 
         function drawHistory() {
+            var selected = selection[selection.length - 1];
             if (selected == null) {
                 historyPoints.selectAll("circle").remove();
                 historyLabels.selectAll("text").remove();

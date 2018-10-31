@@ -70,7 +70,6 @@ svg {
     transition: opacity 0.2s, transform 0.2s, r 0.2s;
     cx: 0;
     cy: 0;
-    stroke: black;
     stroke-width: 1px;
     opacity: 1;
     cursor: pointer;
@@ -81,10 +80,13 @@ svg {
     fill-opacity: 1;
 }
 
-.country-circle.hovered,
-.country-circle.selected {
+.country-circle.hovered {
+    stroke: #8dd3c7 !important;
     stroke-width: 5px;
-    stroke: orange !important;
+}
+
+.country-circle.selected {
+    stroke-width: 7px;
 }
 
 .country-circle.blend-out {
@@ -92,6 +94,7 @@ svg {
 }
 
 .country-circle.country-history {
+    stroke: black;
     /* pointer-events: stroke; */
 }
 
