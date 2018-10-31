@@ -33,7 +33,6 @@ svg {
     fill: #66e;
     pointer-events: stroke;
     r: 15;
-    transition: cx 0.1s;
 }
 
 .slider text {
@@ -56,8 +55,6 @@ svg {
 }
 
 .country-label {
-    transition: opacity 0.2s, transform 0.2s;
-    y: 20;
     text-anchor: middle;
     fill-opacity: 0;
     pointer-events: none;
@@ -67,7 +64,6 @@ svg {
 }
 
 .country-circle {
-    transition: opacity 0.2s, transform 0.2s, r 0.2s;
     cx: 0;
     cy: 0;
     stroke-width: 1px;
