@@ -69,6 +69,7 @@ svg {
     stroke-width: 1px;
     opacity: 1;
     cursor: pointer;
+    transition: opacity 0.35s ease-in-out;
 }
 
 .country-label.hovered,
