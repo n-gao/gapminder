@@ -515,28 +515,40 @@
         function drawPillars() {
             // Pillars
             var pillarData;
+            var pillarDatas;
             if (selected != null && year in selected.yearlyData) {
                 pillarData = Object.values(selected.yearlyData[year].pillars);
                 
-                selection.map(country => Object.values(country.yearlyData[year].pillars));
+                pillarData = [].concat.apply([], selection.map((country, ind) => Object.values(country.yearlyData[year].pillars).map((data, i) => {
+                    return {
+                        country : country.name,
+                        country_index : ind,
+                        index : i,
+                        ...data
+                    };
+                })));
             } else {
                 pillarData = [];
+                pillarDatas = [];
             }
+
+            var nSelection = selection.length;
 
             var pillars = pillarBars.selectAll("rect")
                 .data(pillarData, p => p.pillar);
 
-            var pillarHeight = pillarPlot.height / 36;
+            var pillarHeight = pillarPlot.height / 15 / nSelection;
 
             pillars.enter()
                 .append("rect")
                 .classed("pillar", true)
                 .attr("x", 0)
-                .attr("y", (p, i) => i * pillarPlot.height / 12 + pillarHeight)
                 .attr("height", pillarHeight)
                 .merge(pillars) // Set attributes for all pillars
                 .transition()
                 .duration(200)
+                .attr("height", pillarHeight)
+                .attr("y", (p, i) => p.index * pillarPlot.height / 12 + pillarHeight*p.country_index + pillarHeight*nSelection/8)
                 .attr("width", p => p.value * pillarPlot.width / 10);
 
             pillars.exit()
