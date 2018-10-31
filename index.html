@@ -383,7 +383,8 @@
                         var x = d3.event.x + yearScale.range()[1] / (maxYear - minYear) / 2;
                         var newYear = parseInt(yearScale.invert(x));
                         playPause(false);
-                        generateVis(newYear, selected);
+                        if (newYear != year)
+                            generateVis(newYear, selection);
                     }));
 
             controlHandle = slider.append("circle");
@@ -406,7 +407,7 @@
                     playPause();
                 });
 
-            generateVis(minYear, countries[30]);
+            generateVis(minYear, [countries[30]]);
         });
 
         function scaleX(gdp) {
@@ -437,29 +438,42 @@
         }
 
         var selected = undefined;
-        const selection = [];
+        var selection = [];
 
         function isIn(array, value) {
             return array.indexOf(value) > -1;
         }
 
-        function onClickCountry(country) {
-            if (country == selected || isIn(selection, country)) {
-                generateVis(year, null);
-            } else {
-                generateVis(year, country);
+        function isSelected(country) {
+            return isIn(selection, country);
+        }
+
+        function removeSelection(country) {
+            if (isSelected(country)) {
+                selection.splice(selection.indexOf(country), 1);
+                generateVis(year, selection);
             }
         }
 
-        function generateVis(newYear, newSelected) {
-            if ((newYear == year || newYear < minYear || newYear > maxYear) && (newSelected == selected))
-                return;
-            selected = newSelected;
-            if (isIn(selection, newSelected)) {
-                selection.splice(selection.indexOf(newSelected), 1);
-            } else {
-                selection.push(newSelected);
+        function addSeelction(country) {
+            if (!isSelected(country)) {
+                selection.push(country);
+                generateVis(year, selection);
             }
+        }
+
+        function onClickCountry(country) {
+            if (isSelected(country)) {
+                removeSelection(country);
+            } else {
+                addSeelction(country);
+            }
+        }
+
+        function generateVis(newYear, newSelection) {
+            if (newYear < minYear || newYear > maxYear)
+                return;
+            selection = newSelection;
             year = newYear;
             controlHandle.transition()
                 .attr("cx", yearScale(year));
@@ -488,7 +502,7 @@
                 .merge(points) // Set attributes for all bubbles
                 .attr("r", country => scaleR(country.getPopulation(year)))
                 .attr("transform", country => country.transform(year))
-                .classed('selected', country => selected == country);
+                .classed('selected', isSelected);
 
             // Add Text
             var labels = plotLabels.selectAll("text")
@@ -501,7 +515,7 @@
                 .classed("country-label", true)
                 .merge(labels) // Set attributes for all labels
                 .attr("transform", country => country.transform(year))
-                .classed('selected', country => selected == country);
+                .classed('selected', isSelected);
 
             points.exit()
                 .transition()
@@ -514,24 +528,20 @@
 
         function drawPillars() {
             // Pillars
-            var pillarData;
-            if (selected != null && year in selected.yearlyData) {
-                pillarData = [].concat.apply([], selection.map((country, ind) => Object.values(country.yearlyData[year].pillars).map((data, i) => {
+            var pillarData = [].concat.apply([], selection.filter(c => year in c.yearlyData).map((country, ind) =>
+                Object.values(country.yearlyData[year].pillars).map((data, i) => {
                     return {
-                        country : country.name,
-                        country_index : ind,
-                        index : i,
+                        country: country.name,
+                        country_index: ind,
+                        index: i,
                         ...data
                     };
                 })));
-            } else {
-                pillarData = [];
-            }
 
             var nSelection = selection.length;
 
             var pillars = pillarBars.selectAll("rect")
-                .data(pillarData, p => p.pillar);
+                .data(pillarData, p => p.pillar + p.country);
 
             var pillarHeight = pillarPlot.height / 15 / nSelection;
 
@@ -539,12 +549,15 @@
                 .append("rect")
                 .classed("pillar", true)
                 .attr("x", 0)
+                .attr("y", (p, i) => p.index * pillarPlot.height / 12 + pillarHeight * p.country_index + pillarHeight *
+                    nSelection / 8)
                 .attr("height", pillarHeight)
                 .merge(pillars) // Set attributes for all pillars
                 .transition()
                 .duration(200)
                 .attr("height", pillarHeight)
-                .attr("y", (p, i) => p.index * pillarPlot.height / 12 + pillarHeight*p.country_index + pillarHeight*nSelection/8)
+                .attr("y", (p, i) => p.index * pillarPlot.height / 12 + pillarHeight * p.country_index + pillarHeight *
+                    nSelection / 8)
                 .attr("width", p => p.value * pillarPlot.width / highestPillar);
 
             pillars.exit()
@@ -604,7 +617,7 @@
             if ((timer == -1 && play === undefined) || play === true) {
                 var nextYear = year < maxYear ? year + 1 : minYear;
                 timer = setInterval(() => {
-                    generateVis(nextYear, selected);
+                    generateVis(nextYear, selection);
                     nextYear += 1;
                     if (nextYear > maxYear) {
                         playPause();
