@@ -2,8 +2,19 @@
     font-family: sans-serif;
 }
 
+#visualizations {
+    display: block;
+    overflow: hidden;
+    white-space: no-wrap;
+    /* float: left; */
+}
+
+svg {
+    display: inline-block;
+}
+
 .legend {
-    font-size: 1.2em;
+    font-size: 1em;
 }
 
 .legend-circle {
@@ -22,6 +33,7 @@
     fill: #66e;
     pointer-events: stroke;
     r: 15;
+    transition: cx 0.1s;
 }
 
 .slider text {
@@ -49,7 +61,9 @@
     text-anchor: middle;
     fill-opacity: 0;
     pointer-events: none;
-    font-weight: 800;
+    font-weight: 700;
+    alignment-baseline: central;
+    dominant-baseline: central;
 }
 
 .country-circle {
@@ -79,4 +93,12 @@
 
 .country-circle.country-history {
     /* pointer-events: stroke; */
+}
+
+#pillar-y-axis .domain {
+    /* display: none; */
+}
+
+#pillar-y-axis line {
+    display: none;
 }
