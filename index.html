@@ -35,12 +35,12 @@
 
         const pillarPlot = {
             outer_height: plot.outer_height,
-            outer_width: 500,
+            outer_width: 400,
             margin: {
                 top: 60,
                 right: 25,
                 bottom: 50,
-                left: 200
+                left: 190
             },
             legendmargin: 10,
             width: 0,
@@ -67,8 +67,8 @@
             'Insitutions',
             'Infrastructure',
             'Macroeconimic environment',
-            'Health and primary education',
-            'Higher education and training',
+            'Health & primary education',
+            'Higher education & training',
             'Goods market efficiency',
             'Labor market efficiency',
             'Financial market development',
@@ -579,9 +579,10 @@
                 .transition()
                 .duration((p, i) => 150 + i * 20)
                 .attr("height", pillarHeight)
+                .attr("x", 0.5) // moving it 0.5 to the right to compensate for the border
                 .attr("y", (p, i) => p.index * pillarPlot.height / 12 + pillarHeight * p.country_index + pillarHeight *
                     nSelection / 8)
-                .attr("width", p => p.value * pillarPlot.width / highestPillar);
+                .attr("width", p => p.value * pillarPlot.width / highestPillar - 1); // -1 to compensate the stroke border
 
             pillars.exit()
                 .transition()
@@ -592,7 +593,7 @@
             // Draw legend
             var invSel = selection.slice().reverse();
             var legendCircles = pillarLegend.selectAll("rect")
-                .data(invSel, c => c.name);
+                .data(invSel, (c, i) => i);
             var legendLabels = pillarLegend.selectAll("text")
                 .data(invSel, c => c.name);
 
@@ -666,6 +667,7 @@
                 .classed("country-label", true)
                 .classed("country-history", true);
 
+            hisPoints.interrupt();
             hisPoints.exit()
                 .transition()
                 .duration(200)

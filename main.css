@@ -47,12 +47,17 @@ svg {
 
 .slider text {
     text-anchor: middle;
+    font-size: 11pt;
+    transform: translate(0, -8px);
+    alignment-baseline: central;
+    dominant-baseline: central;
 }
 
 .play-btn text {
     text-anchor: middle;
-    font-size: 24px;
-    transform: translate(0, 8.5px);
+    font-size: 16pt;
+    alignment-baseline: central;
+    dominant-baseline: central;
     cursor: pointer;
     fill: white;
 }
@@ -60,7 +65,7 @@ svg {
 .play-btn circle {
     cx: 0;
     cy: 0;
-    r: 20;
+    r: 18;
     fill: #66e;
 }
 
@@ -113,6 +118,6 @@ svg {
     display: none;
 }
 
-#pillar-y-axis text {
-    font-size: 1.4em;
+.axis text {
+    font-size: 10pt;
 }
