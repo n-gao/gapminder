@@ -13,6 +13,12 @@ svg {
     display: inline-block;
 }
 
+.title {
+    font-size: 18pt;
+    text-anchor: middle;
+    dominant-baseline: hanging ; 
+}
+
 .legend {
     font-size: 1em;
     transform: translate(15px, 0);

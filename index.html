@@ -37,14 +37,17 @@
             outer_height: plot.outer_height,
             outer_width: 400,
             margin: {
-                top: 80,
+                top: 90,
                 right: 25,
                 bottom: 50,
                 left: 190
             },
             legend_margin : {
-                top: 50,
+                top: 60,
                 left: 20
+            },
+            title_margin : {
+                top: 10,
             },
             width: 0,
             height: 0,
@@ -139,6 +142,12 @@
         var pillarLegend = pillarPlot.svg.append("g")
             .attr("id", "pillar-legend")
             .attr("transform", "translate(" + pillarPlot.legend_margin.left + "," + pillarPlot.legend_margin.top + ")");
+
+        pillarPlot.svg.append("text")
+            .text("Competitiveness breakdown")
+            .classed("title", true)
+            .attr("x", pillarPlot.outer_width/2)
+            .attr("y", pillarPlot.title_margin.top);
 
         var highestPillar = -1;
 
@@ -551,7 +560,8 @@
 
         function drawPillars() {
             // Pillars
-            var pillarData = [].concat.apply([], selection
+            var reverseSel = selection.slice().reverse();
+            var pillarData = [].concat.apply([], reverseSel
                 .filter(c => year in c.yearlyData)
                 .map((country, ind) => Object.values(country.yearlyData[year].pillars)
                     .map((data, i) => {
@@ -597,18 +607,16 @@
 
             // Draw legend
             var legendCircles = pillarLegend.selectAll("rect")
-                .data(selection, (c, i) => i);
+                .data(reverseSel, (c, i) => i);
             var legendLabels = pillarLegend.selectAll("text")
-                .data(selection, (c, i) => c.name + i);
+                .data(reverseSel, (c, i) => c.name);
 
             legendCircles.enter()
                 .append("rect")
                 .classed("legend-rect", true)
                 .merge(legendCircles)
                 .attr("fill", strokeColor)
-                .transition()
-                .duration(200)
-                .attr("x", (c, i) => i*(pillarPlot.outer_width-2*pillarPlot.legend_margin.left)/2 + 10)
+                .attr("x", (c, i) => i*(pillarPlot.outer_width-2*pillarPlot.legend_margin.left)/2 + 10);
                 // .attr("y", (p, i) => i*30);
 
             legendCircles.exit()
@@ -624,7 +632,10 @@
                 .append("text")
                 .classed("legend", true)
                 .text(c => c.name)
+                .attr("x", -200)
                 .merge(legendLabels)
+                .transition()
+                .duration(300)
                 .attr("x", (p, i) => i*(pillarPlot.outer_width-2*pillarPlot.legend_margin.left)/2+20);
 
             legendLabels.exit()
