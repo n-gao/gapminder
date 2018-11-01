@@ -16,24 +16,21 @@ svg {
 .title {
     font-size: 18pt;
     text-anchor: middle;
-    dominant-baseline: hanging ; 
+    transform: translate(0, 24px);
 }
 
 .legend {
-    font-size: 1em;
-    transform: translate(15px, 0);
-    alignment-baseline: central;
-    dominant-baseline: central; 
+    font-size: 16px;
+    transform: translate(15px, 6px);
+    /* alignment-baseline: central;
+    dominant-baseline: central;  */
 }
 
 .legend-circle {
-    r: 7.5;
     stroke: black;
 }
 
 .legend-rect {
-    width: 20px;
-    height: 20px;
     stroke: black;
     transform: translate(0, -10px);
 }
@@ -48,30 +45,22 @@ svg {
 .slider circle {
     fill: #66e;
     pointer-events: stroke;
-    r: 15;
 }
 
 .slider text {
     text-anchor: middle;
     font-size: 11pt;
-    transform: translate(0, -8px);
-    alignment-baseline: central;
-    dominant-baseline: central;
 }
 
 .play-btn text {
     text-anchor: middle;
     font-size: 16pt;
-    alignment-baseline: central;
-    dominant-baseline: central;
     cursor: pointer;
     fill: white;
+    transform: translate(0, 8px);
 }
 
 .play-btn circle {
-    cx: 0;
-    cy: 0;
-    r: 18;
     fill: #66e;
 }
 
@@ -85,8 +74,6 @@ svg {
 }
 
 .country-circle {
-    cx: 0;
-    cy: 0;
     stroke-width: 1px;
     opacity: 1;
     cursor: pointer;
@@ -113,11 +100,6 @@ svg {
 
 .country-circle.country-history {
     stroke: black;
-    /* pointer-events: stroke; */
-}
-
-#pillar-y-axis .domain {
-    /* display: none; */
 }
 
 #pillar-y-axis line {
