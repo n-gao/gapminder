@@ -37,12 +37,15 @@
             outer_height: plot.outer_height,
             outer_width: 400,
             margin: {
-                top: 60,
+                top: 80,
                 right: 25,
                 bottom: 50,
                 left: 190
             },
-            legendmargin: 10,
+            legend_margin : {
+                top: 50,
+                left: 20
+            },
             width: 0,
             height: 0,
             canvas: null
@@ -135,7 +138,7 @@
         var pillarBars = pillarPlot.canvas.append("g").attr("id", "pillar-bars");
         var pillarLegend = pillarPlot.svg.append("g")
             .attr("id", "pillar-legend")
-            .attr("transform", "translate(" + pillarPlot.margin.left + "," + pillarPlot.legendmargin + ")");
+            .attr("transform", "translate(" + pillarPlot.legend_margin.left + "," + pillarPlot.legend_margin.top + ")");
 
         var highestPillar = -1;
 
@@ -593,11 +596,10 @@
                 .remove();
 
             // Draw legend
-            var invSel = selection.slice().reverse();
             var legendCircles = pillarLegend.selectAll("rect")
-                .data(invSel, (c, i) => i);
+                .data(selection, (c, i) => i);
             var legendLabels = pillarLegend.selectAll("text")
-                .data(invSel, c => c.name);
+                .data(selection, (c, i) => c.name + i);
 
             legendCircles.enter()
                 .append("rect")
@@ -606,31 +608,26 @@
                 .attr("fill", strokeColor)
                 .transition()
                 .duration(200)
-                .attr("y", (p, i) => i*30);
+                .attr("x", (c, i) => i*(pillarPlot.outer_width-2*pillarPlot.legend_margin.left)/2 + 10)
+                // .attr("y", (p, i) => i*30);
 
             legendCircles.exit()
                 .transition()
                 .duration(200)
                 .style("width", 0)
                 .style("height", 0)
-                .style("x", 10)
+                .attr("x", (c, i) => i*(pillarPlot.outer_width-2*pillarPlot.legend_margin.left)/2 + 15)
                 .style("y", 10)
                 .remove();
 
             legendLabels.enter()
                 .append("text")
                 .classed("legend", true)
-                .attr("x", 10)
                 .text(c => c.name)
                 .merge(legendLabels)
-                .transition()
-                .duration(200)
-                .attr("y", (p, i) => i*30);
+                .attr("x", (p, i) => i*(pillarPlot.outer_width-2*pillarPlot.legend_margin.left)/2+20);
 
             legendLabels.exit()
-                .transition()
-                .duration(200)
-                .style("font-size", 0)
                 .remove();
         }
 
@@ -644,7 +641,6 @@
                 .data(hisData, data => data.name + data.year);
             var hisLabels = historyLabels.selectAll("text")
                 .data(hisData, data => data.name + data.year);
-
 
             hisPoints.enter()
                 .append("circle")
@@ -670,8 +666,8 @@
                 .classed("country-label", true)
                 .classed("country-history", true);
 
-            hisPoints.interrupt();
             hisPoints.exit()
+                .interrupt()
                 .transition()
                 .duration(200)
                 .attr("r", 0)
