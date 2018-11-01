@@ -37,11 +37,12 @@
             outer_height: plot.outer_height,
             outer_width: 500,
             margin: {
-                top: 10,
+                top: 60,
                 right: 25,
                 bottom: 50,
                 left: 200
             },
+            legendmargin: 10,
             width: 0,
             height: 0,
             canvas: null
@@ -132,6 +133,9 @@
             .attr("transform", "translate(" + plot.legend_offset + ",0)").attr("id", "legend");
 
         var pillarBars = pillarPlot.canvas.append("g").attr("id", "pillar-bars");
+        var pillarLegend = pillarPlot.svg.append("g")
+            .attr("id", "pillar-legend")
+            .attr("transform", "translate(" + pillarPlot.margin.left + "," + pillarPlot.legendmargin + ")");
 
         var highestPillar = -1;
 
@@ -281,8 +285,7 @@
             minYear = getMin(countries, 'year');
             maxYear = getMax(countries, 'year');
 
-            var data = Object.values(countries[0].yearlyData).map(d => [d.year - minYear, d.global_competitiveness
-            ]);
+            var data = Object.values(countries[0].yearlyData).map(d => [d.year - minYear, d.global_competitiveness]);
             console.log(data);
 
             // Setting up the axis
@@ -360,10 +363,9 @@
                 .classed("legend-circle", true);
 
             enteredLegend.append("text")
-                .attr("class", "legend")
+                .classed("legend", true)
                 .text(region => region)
-                .attr("y", (region, i) => i * 25 + 17)
-                .attr("x", 15);
+                .attr("y", (region, i) => i * 25 + 10);
 
 
             //Setup control
@@ -575,7 +577,7 @@
                 .merge(pillars) // Set attributes for all pillars
                 .attr("fill", d => strokeColor(d.country))
                 .transition()
-                .duration((p,i) => 150+i*20)
+                .duration((p, i) => 150 + i * 20)
                 .attr("height", pillarHeight)
                 .attr("y", (p, i) => p.index * pillarPlot.height / 12 + pillarHeight * p.country_index + pillarHeight *
                     nSelection / 8)
@@ -583,8 +585,49 @@
 
             pillars.exit()
                 .transition()
-                .duration((p,i) => 150+i*20)
+                .duration((p, i) => 150 + i * 20)
                 .attr("width", 0)
+                .remove();
+
+            // Draw legend
+            var invSel = selection.slice().reverse();
+            var legendCircles = pillarLegend.selectAll("rect")
+                .data(invSel, c => c.name);
+            var legendLabels = pillarLegend.selectAll("text")
+                .data(invSel, c => c.name);
+
+            legendCircles.enter()
+                .append("rect")
+                .classed("legend-rect", true)
+                .merge(legendCircles)
+                .attr("fill", strokeColor)
+                .transition()
+                .duration(200)
+                .attr("y", (p, i) => i*30);
+
+            legendCircles.exit()
+                .transition()
+                .duration(200)
+                .style("width", 0)
+                .style("height", 0)
+                .style("x", 10)
+                .style("y", 10)
+                .remove();
+
+            legendLabels.enter()
+                .append("text")
+                .classed("legend", true)
+                .attr("x", 10)
+                .text(c => c.name)
+                .merge(legendLabels)
+                .transition()
+                .duration(200)
+                .attr("y", (p, i) => i*30);
+
+            legendLabels.exit()
+                .transition()
+                .duration(200)
+                .style("font-size", 0)
                 .remove();
         }
 
