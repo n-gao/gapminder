@@ -42,11 +42,11 @@
                 bottom: 50,
                 left: 190
             },
-            legend_margin : {
+            legend_margin: {
                 top: 60,
                 left: 20
             },
-            title_margin : {
+            title_margin: {
                 top: 10,
             },
             width: 0,
@@ -67,6 +67,24 @@
             width: 0,
             height: 0,
             canvas: null
+        }
+
+        const keys = {
+            country: 'Country',
+            population: 'Population',
+            competitiveness: 'Global_Competitiveness_Index',
+            gdp: 'GDP',
+            incomeGroup: 'Income group',
+            year: 'Year',
+            region: 'Region',
+            classification: 'Forum classification',
+            pillars: [
+                '1st_pillar_Institutions', '2nd_pillar_Infrastructure', '3rd_pillar_Macroeconomic_environment',
+                '4th_pillar_Health_and_primary_education', '5th_pillar_Higher_education_and_training',
+                '6th_pillar_Goods_market_efficiency', '7th_pillar_Labor_market_efficiency',
+                '8th_pillar_Financial_market_development', '9th_pillar_Technological_readiness',
+                '10th_pillar_Market_size', '11th_pillar_Business_sophistication_', '12th_pillar_Innovation'
+            ],
         }
 
         const pillarNames = [
@@ -146,27 +164,28 @@
         pillarPlot.svg.append("text")
             .text("Competitiveness breakdown")
             .classed("title", true)
-            .attr("x", pillarPlot.outer_width/2)
+            .attr("x", pillarPlot.outer_width / 2)
             .attr("y", pillarPlot.title_margin.top);
 
         var highestPillar = -1;
 
         class Country {
+
             constructor(entries) {
-                this.region = entries[0]['Region'];
-                this.income_group = entries[0]['Income group'];
-                this.classification = entries[0]['Forum classification'];
-                this.name = entries[0]['Country'];
+                this.region = entries[0][keys.region];
+                this.income_group = entries[0][keys.incomeGroup];
+                this.classification = entries[0][keys.classification];
+                this.name = entries[0][keys.country];
                 this.yearlyData = {}
                 this._selected = false;
                 entries.forEach(entry => {
-                    var year = entry['Year']
+                    var year = entry[keys.year]
                     this.yearlyData[year] = {
                         name: this.name,
                         year: parseInt(year),
-                        population: parseInt(entry['Population']),
-                        gdp: parseInt(entry['GDP']),
-                        global_competitiveness: parseFloat(entry['Global_Competitiveness_Index']),
+                        population: parseInt(entry[keys.population]),
+                        gdp: parseInt(entry[keys.gdp]),
+                        global_competitiveness: parseFloat(entry[keys.competitiveness]),
                         pillars: {}
                     }
                     for (var key in entry) {
@@ -180,6 +199,11 @@
                                 value: parseFloat(entry[key])
                             }
                         }
+                    }
+                    this.yearlyData[year] = Object.assign(this.yearlyData[year], entry);
+                    for (var key in this.yearlyData[year]) {
+                        var val = parseFloat(this.yearlyData[year][key]);
+                        this.yearlyData[year][key] = val;
                     }
                 });
             }
@@ -210,20 +234,61 @@
             }
 
             transform(year) {
-                return "translate(" + scaleX(this.getGdp(year)) + "," + scaleY(this.getCompetitiveness(
-                    year)) + ")";
+                var x = scaleX(this.getValue(year, keys.gdp));
+                var y = scaleY(this.getValue(year, keys.competitiveness));
+                if (x < -100000) {
+                    console.log(this.getValue(year, keys.gdp));
+                    console.log(x);
+                }
+                return `translate(${x},${y})`;
             }
 
-            getCompetitiveness(year) {
-                return this.yearlyData[year].global_competitiveness;
+            upperBound(years, index, key) {
+                if (index == years.length - 1) {
+                    return -1;
+                }
+                while (++index < years.length && isNaN(this.yearlyData[years[index]][key]));
+                if (index == years.length) {
+                    return -1;
+                }
+                return index;
             }
 
-            getPopulation(year) {
-                return this.yearlyData[year].population;
+            lowerBound(years, index, key) {
+                if (index == 0) {
+                    return -1;
+                }
+                while (--index >= 0 && isNaN(this.yearlyData[years[index]][key]));
+                return index;
             }
 
-            getGdp(year) {
-                return this.yearlyData[year].gdp;
+            getValue(year, key) {
+                if (!isNaN(this.yearlyData[year][key])) {
+                    return this.yearlyData[year][key];
+                }
+                var years = Object.keys(this.yearlyData);
+                var index = years.indexOf(year.toString());
+                var lowerBound = this.upperBound(years, index, key);
+                var upperBound = this.lowerBound(years, index, key);
+                if (lowerBound == -1) {
+                    return this.yearlyData[years[upperBound]][key];
+                }
+                if (upperBound == -1) {
+                    return this.yearlyData[years[lowerBound]][key];
+                }
+                var lowerYear = years[lowerBound];
+                var upperYear = years[upperBound];
+                var lowerValue, upperValue;
+                try {
+                    lowerValue = this.yearlyData[lowerYear][key];
+                    upperValue = this.yearlyData[upperYear][key];
+                } catch (e) {
+                    console.log(years);
+                    console.log(lowerBound, lowerYear, lowerValue);
+                    console.log(upperBound, upperYear, upperValue);
+                    throw e;
+                }
+                return (year - lowerYear) / (upperYear - lowerYear) * (upperValue - lowerValue) + lowerValue;
             }
 
             getMax(key) {
@@ -246,13 +311,8 @@
                 return min;
             }
 
-            isDataComplete(year) {
-                if (year in this.yearlyData) {
-                    var data = this.yearlyData[year];
-                    return !isNaN(data.global_competitiveness) && !isNaN(data.gdp) && !isNaN(data.population);
-                } {
-                    return false;
-                }
+            hasYear(year) {
+                return year in this.yearlyData;
             }
         }
 
@@ -280,25 +340,27 @@
         var colorMap = {};
 
         d3.csv('./GCI_CompleteData2.csv', data => {
-            var grouped = groupBy(data, 'Country');
+            var grouped = groupBy(data, keys.country);
             countries = []
             for (var name in grouped) {
                 countries.push(new Country(grouped[name]));
             }
 
-            minGdp = getMin(countries, 'gdp');
-            maxGdp = getMax(countries, 'gdp');
+            minGdp = getMin(countries, keys.gdp);
+            maxGdp = getMax(countries, keys.gdp);
             minGdp = 100;
             maxGdp = 4000000;
-            minComp = getMin(countries, 'global_competitiveness');
-            maxComp = getMax(countries, 'global_competitiveness');
+            minComp = getMin(countries, keys.competitiveness);
+            maxComp = getMax(countries, keys.competitiveness);
             minComp = 2.5;
             maxComp = 6;
-            minYear = getMin(countries, 'year');
-            maxYear = getMax(countries, 'year');
+            minYear = getMin(countries, keys.year);
+            maxYear = getMax(countries, keys.year);
+            minYear = 2007;
+            maxYear = 2017;
 
-            var data = Object.values(countries[0].yearlyData).map(d => [d.year - minYear, d.global_competitiveness]);
-            console.log(data);
+            // var data = Object.values(countries[0].yearlyData).map(d => [d.year - minYear, d.global_competitiveness]);
+            // console.log(data);
 
             // Setting up the axis
             xScale.domain([minGdp, maxGdp]);
@@ -516,9 +578,9 @@
 
         function drawMainVis() {
             var currentCountries = countries.filter(country =>
-                    country.isDataComplete(year))
+                    country.hasYear(year))
                 .sort((c1, c2) =>
-                    c2.getPopulation(year) - c1.getPopulation(year));
+                    c2.getValue(year, keys.population) - c1.getValue(year, keys.population));
 
 
             var points = plotPoints.selectAll("circle")
@@ -538,7 +600,7 @@
                 .classed('selected', isSelected)
                 .transition()
                 .duration(200)
-                .attr("r", country => scaleR(country.getPopulation(year)))
+                .attr("r", country => scaleR(country.getValue(year, keys.population)))
                 .attr("transform", country => country.transform(year))
                 .attr("stroke", strokeColor);
 
@@ -569,16 +631,19 @@
         function drawPillars() {
             // Pillars
             var reverseSel = selection.slice().reverse();
-            var pillarData = [].concat.apply([], reverseSel
-                .filter(c => year in c.yearlyData)
-                .map((country, ind) => Object.values(country.yearlyData[year].pillars)
-                    .map((data, i) => {
-                        var cpy = Object.assign({}, data);
-                        cpy.country = country;
-                        cpy.country_index = ind;
-                        cpy.index = i;
-                        return cpy;
-                    })));
+            // Selecting the data to visualize
+            var pillarData = reverseSel.filter(c => c.hasYear(year)).map((c, ind) =>
+                keys.pillars.map((name, i) => {
+                    return {
+                        value: c.yearlyData[year][name],
+                        pillar: name,
+                        index: i,
+                        country_index: ind,
+                        country: c
+                    }
+                }));
+            // Flatten
+            pillarData = [].concat.apply([], pillarData);
 
             var nSelection = selection.length;
 
@@ -607,7 +672,7 @@
 
             pillars.exit()
                 .transition()
-                .delay((p,i) => i * 10)
+                .delay((p, i) => i * 10)
                 .duration(150)
                 .attr("width", 0)
                 .remove();
@@ -625,7 +690,7 @@
                 .classed("legend-rect", true)
                 .merge(legendCircles)
                 .attr("fill", strokeColor)
-                .attr("x", (c, i) => i*(pillarPlot.outer_width-2*pillarPlot.legend_margin.left)/2 + 10);
+                .attr("x", (c, i) => i * (pillarPlot.outer_width - 2 * pillarPlot.legend_margin.left) / 2 + 10);
 
             legendCircles.exit()
                 .transition()
@@ -643,7 +708,7 @@
                 .merge(legendLabels)
                 .transition()
                 .duration(300)
-                .attr("x", (p, i) => i*(pillarPlot.outer_width-2*pillarPlot.legend_margin.left)/2+20);
+                .attr("x", (p, i) => i * (pillarPlot.outer_width - 2 * pillarPlot.legend_margin.left) / 2 + 20);
 
             legendLabels.exit()
                 .remove();
@@ -653,7 +718,7 @@
             var selected = selection[selection.length - 1];
             var hisData = []
             if (selected != null) {
-                hisData = Object.values(selected.yearlyData).filter(data => selected.isDataComplete(data.year));
+                hisData = Object.values(selected.yearlyData).filter(data => selected.hasYear(data.year));
             }
             var hisPoints = historyPoints.selectAll("circle")
                 .data(hisData, data => data.name + data.year);
@@ -670,7 +735,7 @@
                 .on("mouseout", data => selected.outHistory(data))
                 .on("click", () => selected.selected = false)
                 .transition()
-                .delay((d, i) => i*50)
+                .delay((d, i) => i * 50)
                 .duration(200)
                 .attr("r", data => scaleR(data.population))
                 .style("opacity", data => (data.year - minYear) / (maxYear - minYear) / 2 + 0.3)
