@@ -180,31 +180,21 @@
                 this._selected = false;
                 entries.forEach(entry => {
                     var year = entry[keys.year]
-                    this.yearlyData[year] = {
-                        name: this.name,
-                        year: parseInt(year),
-                        population: parseInt(entry[keys.population]),
-                        gdp: parseInt(entry[keys.gdp]),
-                        global_competitiveness: parseFloat(entry[keys.competitiveness]),
-                        pillars: {}
-                    }
-                    for (var key in entry) {
-                        if (key.includes('_pillar_')) {
-                            var value = parseFloat(entry[key]);
-                            if (!isNaN(value) && value > highestPillar) {
-                                highestPillar = value;
-                            }
-                            this.yearlyData[year].pillars[key] = {
-                                pillar: key,
-                                value: parseFloat(entry[key])
+                    var data = Object.assign({
+                        year: year,
+                    }, entry);
+
+                    for (var key in data) {
+                        var val = parseFloat(data[key]);
+                        data[key] = val;
+                        if (keys.pillars.indexOf(key) >= 0) {
+                            if (val > highestPillar) {
+                                highestPillar = val;
                             }
                         }
                     }
-                    this.yearlyData[year] = Object.assign(this.yearlyData[year], entry);
-                    for (var key in this.yearlyData[year]) {
-                        var val = parseFloat(this.yearlyData[year][key]);
-                        this.yearlyData[year][key] = val;
-                    }
+                    data.country = this;
+                    this.yearlyData[year] = data;
                 });
             }
 
@@ -241,6 +231,10 @@
                     console.log(x);
                 }
                 return `translate(${x},${y})`;
+            }
+
+            radius(year) {
+                return scaleR(this.getValue(year, keys.population));
             }
 
             upperBound(years, index, key) {
@@ -288,7 +282,8 @@
                     console.log(upperBound, upperYear, upperValue);
                     throw e;
                 }
-                return (year - lowerYear) / (upperYear - lowerYear) * (upperValue - lowerValue) + lowerValue;
+                var result = (year - lowerYear) / (upperYear - lowerYear) * (upperValue - lowerValue) + lowerValue;
+                return result;
             }
 
             getMax(key) {
@@ -370,7 +365,7 @@
             plot.canvas.append("g")
                 .attr("class", "axis")
                 .attr("id", "x-axis")
-                .attr("transform", "translate(0," + plot.height + ")")
+                .attr("transform", `translate(0, ${plot.height})`)
                 .call(xAxis);
 
             // Create the y axis
@@ -382,8 +377,7 @@
 
             plot.canvas.append("text")
                 .attr("transform",
-                    "translate(" + (plot.width / 2) + " ," +
-                    (plot.height + plot.margin.top + 20) + ")")
+                    `translate(${plot.width / 2}, ${plot.height + plot.margin.top + 20})`)
                 .style("text-anchor", "middle")
                 .text("GDP");
 
@@ -414,8 +408,9 @@
 
             pillarPlot.canvas.append("text")
                 .attr("transform",
-                    "translate(" + (pillarPlot.width / 2) + " ," +
-                    (pillarPlot.height + pillarPlot.margin.top + 20) + ")")
+                    `translate(${pillarPlot.width / 2},
+                    ${pillarPlot.height + pillarPlot.margin.top + 20})`
+                )
                 .style("text-anchor", "middle")
                 .text("Value");
 
@@ -449,7 +444,7 @@
                 .range([0, control.width - control.lineOffset]);
 
             var slider = control.canvas.append("g")
-                .attr("transform", "translate(" + 50 + ", 0)")
+                .attr("transform", `translate(50, 0)`)
                 .classed("slider", true);
 
             slider.append("line")
@@ -470,7 +465,7 @@
                 .attr("r", 15);
 
             slider.append("g")
-                .attr("transform", "translate(0," + 36 + ")")
+                .attr("transform", `translate(0, 36)`)
                 .selectAll("text")
                 .data(yearScale.ticks(maxYear - minYear))
                 .enter()
@@ -635,7 +630,7 @@
             var pillarData = reverseSel.filter(c => c.hasYear(year)).map((c, ind) =>
                 keys.pillars.map((name, i) => {
                     return {
-                        value: c.yearlyData[year][name],
+                        value: c.getValue(year, name),
                         pillar: name,
                         index: i,
                         country_index: ind,
@@ -718,12 +713,12 @@
             var selected = selection[selection.length - 1];
             var hisData = []
             if (selected != null) {
-                hisData = Object.values(selected.yearlyData).filter(data => selected.hasYear(data.year));
+                hisData = Object.values(selected.yearlyData);
             }
             var hisPoints = historyPoints.selectAll("circle")
-                .data(hisData, data => data.name + data.year);
+                .data(hisData, data => data.country.name + data.year);
             var hisLabels = historyLabels.selectAll("text")
-                .data(hisData, data => data.name + data.year);
+                .data(hisData, data => data.country.name + data.year);
 
             hisPoints.enter()
                 .append("circle")
@@ -737,7 +732,7 @@
                 .transition()
                 .delay((d, i) => i * 50)
                 .duration(200)
-                .attr("r", data => scaleR(data.population))
+                .attr("r", data => selected.radius(data.year))
                 .style("opacity", data => (data.year - minYear) / (maxYear - minYear) / 2 + 0.3)
                 .style("fill", data => colorMap[selected.classification]);
 
