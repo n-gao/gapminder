@@ -226,10 +226,6 @@
             transform(year) {
                 var x = scaleX(this.getValue(year, keys.gdp));
                 var y = scaleY(this.getValue(year, keys.competitiveness));
-                if (x < -100000) {
-                    console.log(this.getValue(year, keys.gdp));
-                    console.log(x);
-                }
                 return `translate(${x},${y})`;
             }
 
@@ -608,6 +604,7 @@
                 .attr("id", country => country.labelId)
                 .text(country => country.name)
                 .classed("country-label", true)
+                .attr("transform", country => country.transform(year))
                 .merge(labels) // Set attributes for all labels
                 .classed('selected', isSelected)
                 .transition()
@@ -729,11 +726,11 @@
                 .on("mouseover", data => selected.overHistory(data))
                 .on("mouseout", data => selected.outHistory(data))
                 .on("click", () => selected.selected = false)
+                .style("opacity", data => (data.year - minYear) / (maxYear - minYear) / 2 + 0.4)
                 .transition()
                 .delay((d, i) => i * 50)
                 .duration(200)
                 .attr("r", data => selected.radius(data.year))
-                .style("opacity", data => (data.year - minYear) / (maxYear - minYear) / 2 + 0.3)
                 .style("fill", data => colorMap[selected.classification]);
 
             hisLabels.enter()
