@@ -131,7 +131,8 @@
         // Create an x-axis connected to the x scale
         const xAxis = d3.axisBottom()
             .scale(xScale)
-            .ticks(5);
+            .ticks(5)
+            .tickFormat(d => xScale.tickFormat(4, d3.format(",d"))(d));
         //Define Y axis
         const yAxis = d3.axisLeft()
             .scale(yScale)
@@ -155,6 +156,20 @@
         var plotLabels = plot.canvas.append("g").attr("id", "labels");
         var legend = plot.canvas.append("g")
             .attr("transform", "translate(" + plot.legend_offset + ",0)").attr("id", "legend");
+
+        plot.canvas.append("text")
+            .attr("transform",
+                `translate(${plot.width / 2}, ${plot.height + plot.margin.top + 40})`)
+            .style("text-anchor", "middle")
+            .text("GDP");
+
+        plot.canvas.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - plot.margin.left)
+            .attr("x", 0 - (plot.height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("Gloabl competitiveness");
 
         var pillarBars = pillarPlot.canvas.append("g").attr("id", "pillar-bars");
         var pillarLegend = pillarPlot.svg.append("g")
@@ -339,7 +354,7 @@
 
             minGdp = getMin(countries, keys.gdp);
             maxGdp = getMax(countries, keys.gdp);
-            minGdp = 100;
+            minGdp = 50;
             maxGdp = 4000000;
             minComp = getMin(countries, keys.competitiveness);
             maxComp = getMax(countries, keys.competitiveness);
@@ -369,22 +384,6 @@
                 .attr("class", "axis")
                 .attr("id", "y-axis")
                 .call(yAxis);
-
-
-            plot.canvas.append("text")
-                .attr("transform",
-                    `translate(${plot.width / 2}, ${plot.height + plot.margin.top + 20})`)
-                .style("text-anchor", "middle")
-                .text("GDP");
-
-            plot.canvas.append("text")
-                .attr("transform", "rotate(-90)")
-                .attr("y", 0 - plot.margin.left)
-                .attr("x", 0 - (plot.height / 2))
-                .attr("dy", "1em")
-                .style("text-anchor", "middle")
-                .text("Gloabl competitiveness");
-
 
             // Create the pilalr x axis
             pxScale.domain([0, Math.ceil(highestPillar)]);
@@ -508,16 +507,23 @@
             country.label.classed("hovered", true);
             plotPoints.selectAll("circle").classed("blend-out", true);
             country.circle.classed("blend-out", false);
+
+            hovered = country;
+            drawReadingHelp();
         }
 
         function stopHover(country) {
+            hovered = null;
             plotPoints.selectAll("circle")
                 .classed("hovered", false)
                 .classed("blend-out", false);
             plotLabels.selectAll("text")
                 .classed("hovered", false);
+
+            drawReadingHelp();
         }
 
+        var hovered = null;
         var selected = undefined;
         var selection = [];
 
@@ -565,6 +571,7 @@
             drawMainVis();
             drawPillars();
             drawHistory();
+            drawReadingHelp();
         }
 
         function drawMainVis() {
@@ -618,6 +625,43 @@
                 .remove();
             labels.exit()
                 .remove();
+        }
+
+        function drawReadingHelp() {
+            var data = hovered == null ? [] : [0, 1];
+            var lines = plotPoints.selectAll("line")
+                .data(data);
+            var values = plotPoints.selectAll("text")
+                .data(data);
+
+            if (hovered != null) {
+                var x_val = hovered.getValue(year, keys.gdp)
+                var x = scaleX(x_val);
+                var y_val = hovered.getValue(year, keys.competitiveness);
+                var y = scaleY(y_val);
+            }
+
+            lines.enter()
+                .insert("line", ":first-child")
+                .merge(lines)
+                .attr("x1", d => d * x)
+                .attr("y1", d => d == 0 ? y : plot.height)
+                .attr("x2", x)
+                .attr("y2", y)
+                .attr("stroke", "black")
+                .attr("stroke-dasharray", "5, 5");
+
+            values.enter()
+                .insert("text", ":first-child")
+                .merge(values)
+                .attr("x", d => d * x)
+                .attr("y", d => d == 0 ? y : plot.height)
+                .text(d => Math.round((d == 0 ? y_val : x_val) * 10) / 10)
+                .attr("text-anchor", d => d == 0 ? "end" : "middle")
+                .attr("transform", d => `translate(${8*(d-1)}, ${d*30})`);
+
+            lines.exit().remove();
+            values.exit().remove();
         }
 
         function drawPillars() {
