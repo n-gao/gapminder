@@ -622,27 +622,8 @@
                 .duration(200)
                 .attr("transform", country => country.labelTransform(year));
 
-            var enteredLabels = labels.enter()
-                .append("g")
-                .attr("id", country => country.labelId)
-                .classed("country-label", true)
-                .attr("transform", country => country.labelTransform(year));
-            
-            enteredLabels.append("text")
-                .text(country => country.name);
-
-            var pad_x = 10;
-            var pad_y = 5;
-            
-            enteredLabels.insert("rect", ":first-child")
-                .attr("width", c => c.labelText.node().getBBox().width + pad_x)
-                .attr("height", c => c.labelText.node().getBBox().height + pad_y)
-                .attr("x", c => -(c.labelText.node().getBBox().width + pad_x/2))
-                .attr("y", c => (c.labelText.node().getBBox().height + pad_y)/-2);
-
-            enteredLabels.insert("line", ":first-child")
-                .attr("x2", c => c.radius(year))
-                .attr("y2", c => c.radius(year));
+            labels.enter()
+                .call(generateLabel, year);
 
             points.exit()
                 .transition()
@@ -651,6 +632,29 @@
                 .remove();
             labels.exit()
                 .remove();
+        }
+
+        function generateLabel(selection, year) {
+            var entered = selection.append("g")
+                .attr("id", c => c.labelId)
+                .classed("country-label", true)
+                .attr("transform", c => c.labelTransform(year));
+            
+            entered.append("text")
+                .text(c => c.name);
+
+            var pad_x = 10;
+            var pad_y = 5;
+            
+            entered.insert("rect", ":first-child")
+                .attr("width", c => c.labelText.node().getBBox().width + pad_x)
+                .attr("height", c => c.labelText.node().getBBox().height + pad_y)
+                .attr("x", c => -(c.labelText.node().getBBox().width + pad_x/2))
+                .attr("y", c => -(c.labelText.node().getBBox().height + pad_y)/2);
+
+            entered.insert("line", ":first-child")
+                .attr("x2", c => c.radius(year))
+                .attr("y2", c => c.radius(year));
         }
 
         function drawReadingHelp() {
