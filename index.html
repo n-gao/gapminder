@@ -221,6 +221,10 @@
                 return d3.select("#" + this.labelId);
             }
 
+            get labelText() {
+                return this.label.select("text");
+            }
+
             overHistory(data) {
                 d3.select("#" + this.labelId + data.year)
                     .classed("hovered", true);
@@ -242,6 +246,13 @@
                 var x = scaleX(this.getValue(year, keys.gdp));
                 var y = scaleY(this.getValue(year, keys.competitiveness));
                 return `translate(${x},${y})`;
+            }
+
+            labelTransform(year) {
+                var x = scaleX(this.getValue(year, keys.gdp));
+                var y = scaleY(this.getValue(year, keys.competitiveness));
+                var r = scaleR(this.getValue(year, keys.population));
+                return `translate(${x-r}, ${y-r})`;
             }
 
             radius(year) {
@@ -517,7 +528,7 @@
             plotPoints.selectAll("circle")
                 .classed("hovered", false)
                 .classed("blend-out", false);
-            plotLabels.selectAll("text")
+            plotLabels.selectAll("g")
                 .classed("hovered", false);
 
             drawReadingHelp();
@@ -603,20 +614,35 @@
                 .attr("stroke", strokeColor);
 
             // Add Text
-            var labels = plotLabels.selectAll("text")
+            var labels = plotLabels.selectAll("g")
                 .data(currentCountries, country => country.name);
-
-            labels.enter()
-                .append("text")
-                .attr("id", country => country.labelId)
-                .text(country => country.name)
-                .classed("country-label", true)
-                .attr("transform", country => country.transform(year))
-                .merge(labels) // Set attributes for all labels
-                .classed('selected', isSelected)
+            
+            labels.classed('selected', isSelected)
                 .transition()
                 .duration(200)
-                .attr("transform", country => country.transform(year));
+                .attr("transform", country => country.labelTransform(year));
+
+            var enteredLabels = labels.enter()
+                .append("g")
+                .attr("id", country => country.labelId)
+                .classed("country-label", true)
+                .attr("transform", country => country.labelTransform(year));
+            
+            enteredLabels.append("text")
+                .text(country => country.name);
+
+            var pad_x = 10;
+            var pad_y = 5;
+            
+            enteredLabels.insert("rect", ":first-child")
+                .attr("width", c => c.labelText.node().getBBox().width + pad_x)
+                .attr("height", c => c.labelText.node().getBBox().height + pad_y)
+                .attr("x", c => -(c.labelText.node().getBBox().width + pad_x/2))
+                .attr("y", c => (c.labelText.node().getBBox().height + pad_y)/-2);
+
+            enteredLabels.insert("line", ":first-child")
+                .attr("x2", c => c.radius(year))
+                .attr("y2", c => c.radius(year));
 
             points.exit()
                 .transition()
@@ -780,7 +806,7 @@
             hisLabels.enter()
                 .append("text")
                 .attr("id", data => selected.labelId + data.year)
-                .text(data => selected.name + " " + data.year)
+                .text(data => data.year)
                 .attr("transform", data => selected.transform(data.year))
                 .classed("country-label", true)
                 .classed("country-history", true);

@@ -65,12 +65,30 @@ svg {
 }
 
 .country-label {
-    text-anchor: middle;
-    fill-opacity: 0;
+    text-anchor: end;
+    opacity: 0;
     pointer-events: none;
     font-weight: 700;
     alignment-baseline: central;
     dominant-baseline: central;
+}
+
+.country-history {
+    text-anchor: middle !important;
+}
+
+.country-label rect {
+    fill: white;
+    stroke: black;
+    stroke-width: 3px;
+    rx: 3px;
+    ry: 3px;
+}
+
+.country-label line {
+    stroke: black;
+    x1: 0;
+    y1: 0;
 }
 
 .country-circle {
@@ -82,7 +100,7 @@ svg {
 
 .country-label.hovered,
 .country-label.selected {
-    fill-opacity: 1;
+    opacity: 1;
 }
 
 .country-circle.hovered {
