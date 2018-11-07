@@ -73,10 +73,6 @@ svg {
     dominant-baseline: central;
 }
 
-.country-history {
-    text-anchor: middle !important;
-}
-
 .country-label rect {
     fill: white;
     stroke: black;
