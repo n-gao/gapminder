@@ -14,10 +14,11 @@
     <div id="visualizations">
     </div>
     <script>
+        // Setting the used color pallets for different regions
         const ColorPalett = ['#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5', '#d9d9d9'];
-
+        // Setting colors for selection
         const SelectionColors = ['#8dd3c7', '#ffffb3'];
-        // Define margins
+        // Defining the dimensions of the main plot
         const plot = {
             outer_width: 1000,
             outer_height: 750,
@@ -32,7 +33,7 @@
             height: 0,
             canvas: null
         };
-
+        // Defining the dimensions of the pillar plot
         const pillarPlot = {
             outer_height: plot.outer_height,
             outer_width: 400,
@@ -53,7 +54,7 @@
             height: 0,
             canvas: null
         }
-
+        // Defining the dimensions of the control bar
         const control = {
             outer_width: plot.outer_width,
             outer_height: 100,
@@ -68,7 +69,7 @@
             height: 0,
             canvas: null
         }
-
+        // Defining all keys of the given data (avoid bugs through constants)
         const keys = {
             country: 'Country',
             population: 'Population',
@@ -86,7 +87,7 @@
                 '10th_pillar_Market_size', '11th_pillar_Business_sophistication_', '12th_pillar_Innovation'
             ],
         }
-
+        // Define human readable names for all pillars
         const pillarNames = [
             'Insitutions',
             'Infrastructure',
@@ -101,7 +102,7 @@
             'Business sophistication',
             'Innovation'
         ]
-
+        // Generate a svg element based on the given dimensions
         function generateSvgCanvas(dims, parent) {
             dims.width = dims.outer_width - dims.margin.left - dims.margin.right;
             dims.height = dims.outer_height - dims.margin.top - dims.margin.bottom;
@@ -113,13 +114,12 @@
             dims.canvas = dims.svg.append("g")
                 .attr("transform", "translate(" + dims.margin.left + "," + dims.margin.top + ")");
         }
-
+        // Generate a canvas for all elements
         generateSvgCanvas(plot, "#visualizations");
         generateSvgCanvas(pillarPlot, "#visualizations");
         generateSvgCanvas(control, "body");
-
+        // Set the width of the visualization container to ensure that the main plot and pillar plot are displayed in one row
         d3.select("#visualizations").style("width", plot.outer_width + pillarPlot.outer_width + 'px');
-
 
         // Set up the scale to be used on the x axis
         const xScale = d3.scaleLog()
@@ -138,7 +138,7 @@
             .scale(yScale)
             .ticks(5);
 
-        // Define axis for the pillar plot
+        // Define scales for the pillar plot
         const pxScale = d3.scaleLinear()
             .range([0, pillarPlot.width]);
         const pyScale = d3.scaleBand()
@@ -150,6 +150,7 @@
         const pyAxis = d3.axisLeft()
             .scale(pyScale);
 
+        // Define container for several elements in the main plot
         var historyPoints = plot.canvas.append("g").attr("id", "history-bubbles");
         var plotPoints = plot.canvas.append("g").attr("id", "bubbles");
         var plotLabels = plot.canvas.append("g").attr("id", "labels");
@@ -157,12 +158,14 @@
         var legend = plot.canvas.append("g")
             .attr("transform", "translate(" + plot.legend_offset + ",0)").attr("id", "legend");
 
+        // Setup the x label
         plot.canvas.append("text")
             .attr("transform",
                 `translate(${plot.width / 2}, ${plot.height + plot.margin.top + 40})`)
             .style("text-anchor", "middle")
             .text("GDP");
 
+        // Setup the y label
         plot.canvas.append("text")
             .attr("transform", "rotate(-90)")
             .attr("y", 0 - plot.margin.left)
@@ -171,33 +174,35 @@
             .style("text-anchor", "middle")
             .text("Gloabl competitiveness");
 
+        // Define container for several elements in the pillar plot
         var pillarBars = pillarPlot.canvas.append("g").attr("id", "pillar-bars");
         var pillarLegend = pillarPlot.svg.append("g")
             .attr("id", "pillar-legend")
             .attr("transform", "translate(" + pillarPlot.legend_margin.left + "," + pillarPlot.legend_margin.top + ")");
-
+        // Add title for this plot
         pillarPlot.svg.append("text")
             .text("Competitiveness breakdown")
             .classed("title", true)
             .attr("x", pillarPlot.outer_width / 2)
             .attr("y", pillarPlot.title_margin.top);
 
+        // Variable which is used during readin to capture the highest pillar
         var highestPillar = -1;
-
+        
+        // This class represents a country. It eases the access to fixed fields like region, name or classification and contains a dictionary with all yearly specific data.
         class Country {
-
+            // The parameter entries is an array of all csv rows which belong to this country.
             constructor(entries) {
                 this.region = entries[0][keys.region];
                 this.income_group = entries[0][keys.incomeGroup];
                 this.classification = entries[0][keys.classification];
                 this.name = entries[0][keys.country];
                 this.yearlyData = {}
-                this._selected = false;
+                // Setup yearly data from given array
                 entries.forEach(entry => {
                     var year = entry[keys.year]
-                    var data = Object.assign({
-                        year: year,
-                    }, entry);
+                    // Copy the given entry and 
+                    var data = Object.assign({}, entry);
 
                     for (var key in data) {
                         var val = parseFloat(data[key]);
@@ -783,9 +788,9 @@
                 hisData = Object.values(selected.yearlyData);
             }
             var hisPoints = historyPoints.selectAll("circle")
-                .data(hisData, data => data.country.name + data.year);
+                .data(hisData, data => data.country.name + data[keys.year]);
             var hisLabels = historyLabels.selectAll("g")
-                .data(hisData, data => data.country.name + data.year);
+                .data(hisData, data => data.country.name + data[keys.year]);
 
             hisPoints.enter()
                 .append("circle")
