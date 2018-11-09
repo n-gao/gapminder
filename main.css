@@ -77,14 +77,10 @@ svg {
     fill: white;
     stroke: black;
     stroke-width: 3px;
-    rx: 3px;
-    ry: 3px;
 }
 
 .country-label line {
     stroke: black;
-    x1: 0;
-    y1: 0;
 }
 
 .country-circle {

@@ -151,6 +151,7 @@
             .scale(pyScale);
 
         // Define container for several elements in the main plot
+        var readingHelp = plot.canvas.append("g").attr("id", "reading-help");
         var historyPoints = plot.canvas.append("g").attr("id", "history-bubbles");
         var plotPoints = plot.canvas.append("g").attr("id", "bubbles");
         var plotLabels = plot.canvas.append("g").attr("id", "labels");
@@ -188,7 +189,7 @@
 
         // Variable which is used during readin to capture the highest pillar
         var highestPillar = -1;
-        
+
         // This class represents a country. It eases the access to fixed fields like region, name or classification and contains a dictionary with all yearly specific data.
         class Country {
             // The parameter entries is an array of all csv rows which belong to this country.
@@ -219,24 +220,23 @@
             }
 
             get circle() {
-                return d3.select("#" + this.circleId);
+                return this.getCircle(null);
+            }
+
+            getCircle(year) {
+                return d3.select(`#${this.getCircleId(year)}`);
             }
 
             get label() {
-                return d3.select("#" + this.labelId);
+                return this.getLabel(null);
+            }
+
+            getLabel(year) {
+                return d3.select(`#${this.getLabelId(year)}`);
             }
 
             get labelText() {
                 return this.label.select("text");
-            }
-
-            overHistory(data) {
-                d3.select("#" + this.labelId + data.year)
-                    .classed("hovered", true);
-            }
-
-            outHistory(data) {
-                historyLabels.selectAll("g").classed("hovered", false);
             }
 
             get circleId() {
@@ -245,6 +245,14 @@
 
             get labelId() {
                 return 'label_' + this.name.replace(/[^a-zA-Z]/g, "");
+            }
+
+            getCircleId(year) {
+                return this.circleId + (year == null ? '' : year);
+            }
+
+            getLabelId(year) {
+                return this.labelId + (year == null ? '' : year);
             }
 
             transform(year) {
@@ -518,11 +526,22 @@
                 "black";
         }
 
-        function startHover(country) {
-            country.circle.classed("hovered", true);
-            country.label.classed("hovered", true);
-            plotPoints.selectAll("circle").classed("blend-out", true);
-            country.circle.classed("blend-out", false);
+        function startHover(country, newHoveredYear) {
+            if (newHoveredYear == year) {
+                hoveredYear = null;
+            } else {
+                hoveredYear = newHoveredYear;
+            }
+            country.getCircle(hoveredYear)
+                .classed("hovered", true);
+            country.getLabel(hoveredYear)
+                .classed("hovered", true);
+            plotPoints.selectAll("circle")
+                .classed("blend-out", true);
+            historyPoints.selectAll("circle")
+                .classed("blend-out", true);
+            country.getCircle(hoveredYear)
+                .classed("blend-out", false);
 
             hovered = country;
             drawReadingHelp();
@@ -530,15 +549,24 @@
 
         function stopHover(country) {
             hovered = null;
+            hoveredYear = null;
             plotPoints.selectAll("circle")
                 .classed("hovered", false)
                 .classed("blend-out", false);
+
+            historyPoints.selectAll("circle")
+                .classed("hovered", false)
+                .classed("blend-out", false);
+
             plotLabels.selectAll("g")
+                .classed("hovered", false);
+            historyLabels.selectAll("g")
                 .classed("hovered", false);
 
             drawReadingHelp();
         }
 
+        var hoveredYear = null;
         var hovered = null;
         var selected = undefined;
         var selection = [];
@@ -590,6 +618,11 @@
             drawReadingHelp();
         }
 
+        function labelPointerPos(country, year) {
+            var r = country.radius(year);
+            return Math.sqrt(2 * r * r) - r;
+        }
+
         function drawMainVis() {
             var currentCountries = countries.filter(country =>
                     country.hasYear(year))
@@ -605,8 +638,8 @@
                 .append("circle")
                 .attr("id", country => country.circleId)
                 .classed("country-circle", true)
-                .on("mouseover", startHover)
-                .on("mouseout", stopHover)
+                .on("mouseover", c => startHover(c, null))
+                .on("mouseout", c => stopHover(c))
                 .on("click", onClickCountry)
                 .attr("transform", country => country.transform(year))
                 .style("fill", country => colorMap[country.classification])
@@ -614,7 +647,7 @@
                 .classed('selected', isSelected)
                 .transition()
                 .duration(200)
-                .attr("r", country => scaleR(country.getValue(year, keys.population)))
+                .attr("r", country => country.radius(year))
                 .attr("transform", country => country.transform(year))
                 .attr("stroke", strokeColor);
 
@@ -643,11 +676,15 @@
                 .attr("width", c => c.labelText.node().getBBox().width + pad_x)
                 .attr("height", c => c.labelText.node().getBBox().height + pad_y)
                 .attr("x", c => -(c.labelText.node().getBBox().width + pad_x / 2))
-                .attr("y", c => -(c.labelText.node().getBBox().height + pad_y) / 2);
+                .attr("y", c => -(c.labelText.node().getBBox().height + pad_y) / 2)
+                .attr("rx", 3)
+                .attr("ry", 3);
 
             entered.insert("line", ":first-child")
-                .attr("x2", c => c.radius(year))
-                .attr("y2", c => c.radius(year));
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", c => labelPointerPos(c, year))
+                .attr("y2", c => labelPointerPos(c, year));
 
             points.exit()
                 .transition()
@@ -659,16 +696,17 @@
         }
 
         function drawReadingHelp() {
+            var _year = hoveredYear == null ? year : hoveredYear;
             var data = hovered == null ? [] : [0, 1];
-            var lines = plotPoints.selectAll("line")
+            var lines = readingHelp.selectAll("line")
                 .data(data);
-            var values = plotPoints.selectAll("text")
+            var values = readingHelp.selectAll("text")
                 .data(data);
 
             if (hovered != null) {
-                var x_val = hovered.getValue(year, keys.gdp)
+                var x_val = hovered.getValue(_year, keys.gdp)
                 var x = scaleX(x_val);
-                var y_val = hovered.getValue(year, keys.competitiveness);
+                var y_val = hovered.getValue(_year, keys.competitiveness);
                 var y = scaleY(y_val);
             }
 
@@ -795,50 +833,46 @@
             hisPoints.enter()
                 .append("circle")
                 .attr("id", data => selected.circleId + data.year)
-                .attr("transform", data => selected.transform(data.year))
+                .attr("transform", data => selected.transform(data[keys.year]))
                 .classed("country-circle", true)
                 .classed("country-history", true)
-                .on("mouseover", data => selected.overHistory(data))
-                .on("mouseout", data => selected.outHistory(data))
-                .style("opacity", data => (data.year - minYear) / (maxYear - minYear) / 2 + 0.4)
+                .on("mouseover", data => startHover(data.country, data[keys.year]))
+                .on("mouseout", data => stopHover(data.country))
+                .style("opacity", data => (data[keys.year] - minYear) / (maxYear - minYear) / 2 + 0.4)
                 .transition()
                 .delay((d, i) => i * 50)
                 .duration(200)
-                .attr("r", data => selected.radius(data.year))
+                .attr("r", data => selected.radius(data[keys.year]))
                 .style("fill", data => colorMap[selected.classification]);
-
-            // hisLabels.enter()
-            //     .append("text")
-            //     .attr("id", data => selected.labelId + data.year)
-            //     .text(data => data.year)
-            //     .attr("transform", data => selected.transform(data.year))
-            //     .classed("country-label", true)
-            //     .classed("country-history", true);
 
             const getLabelBox = year => d3.select("#" + selected.labelId + year).select("text").node().getBBox();
 
             var entered = hisLabels.enter()
                 .append("g")
-                .attr("id", data => selected.labelId + data.year)
+                .attr("id", data => selected.labelId + data[keys.year])
                 .classed("country-label", true)
                 .classed("country-history", true)
-                .attr("transform", d => selected.labelTransform(d.year));
+                .attr("transform", d => selected.labelTransform(d[keys.year]));
 
             entered.append("text")
-                .text(d => d.year);
+                .text(d => d[keys.year]);
 
             var pad_x = 10;
             var pad_y = 5;
 
             entered.insert("rect", ":first-child")
-                .attr("width", d => getLabelBox(d.year).width + pad_x)
-                .attr("height", d => getLabelBox(d.year).height + pad_y)
-                .attr("x", d => -(getLabelBox(d.year).width + pad_x / 2))
-                .attr("y", d => -(getLabelBox(d.year).height + pad_y) / 2);
+                .attr("width", d => getLabelBox(d[keys.year]).width + pad_x)
+                .attr("height", d => getLabelBox(d[keys.year]).height + pad_y)
+                .attr("x", d => -(getLabelBox(d[keys.year]).width + pad_x / 2))
+                .attr("y", d => -(getLabelBox(d[keys.year]).height + pad_y) / 2)
+                .attr("rx", 3)
+                .attr("ry", 3);
 
             entered.insert("line", ":first-child")
-                .attr("x2", d => selected.radius(d.year))
-                .attr("y2", d => selected.radius(d.year));
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", d => labelPointerPos(selected, d[keys.year]))
+                .attr("y2", d => labelPointerPos(selected, d[keys.year]));
 
             hisPoints.exit()
                 .interrupt()
