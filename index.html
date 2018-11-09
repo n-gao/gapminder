@@ -214,53 +214,65 @@
                             }
                         }
                     }
+                    // Add reference this country
                     data.country = this;
                     this.yearlyData[year] = data;
                 });
             }
 
+            // Get the main bubble
             get circle() {
                 return this.getCircle(null);
             }
 
+            // Returns the history bubble for the specified year. If year==null the main bubble is returned
             getCircle(year) {
                 return d3.select(`#${this.getCircleId(year)}`);
             }
 
+            // Get the main label
             get label() {
                 return this.getLabel(null);
             }
 
+            // Returns the history labels for the specified year. If year==null the main label is returned
             getLabel(year) {
                 return d3.select(`#${this.getLabelId(year)}`);
             }
 
-            get labelText() {
-                return this.label.select("text");
+            //Return the bounding box of the history label for year. If year==null the main label is used.
+            getLabelBB(year) {
+                return this.getLabel(year).select("text").node().getBBox();
             }
 
+            //Returns the id of the main bubble
             get circleId() {
                 return 'circle_' + this.name.replace(/[^a-zA-Z]/g, "");
             }
 
+            // Return the id of the main label
             get labelId() {
                 return 'label_' + this.name.replace(/[^a-zA-Z]/g, "");
             }
 
+            // Returns the id for the history bubble of the given year
             getCircleId(year) {
                 return this.circleId + (year == null ? '' : year);
             }
 
+            // Returns the id for the history label of the given year
             getLabelId(year) {
                 return this.labelId + (year == null ? '' : year);
             }
 
+            // Return the transform for bubble at the given year
             transform(year) {
                 var x = scaleX(this.getValue(year, keys.gdp));
                 var y = scaleY(this.getValue(year, keys.competitiveness));
                 return `translate(${x},${y})`;
             }
 
+            // Return the transform for label at the given year
             labelTransform(year) {
                 var x = scaleX(this.getValue(year, keys.gdp));
                 var y = scaleY(this.getValue(year, keys.competitiveness));
@@ -268,11 +280,13 @@
                 return `translate(${x-r}, ${y-r})`;
             }
 
+            // Return the radius for the given year
             radius(year) {
                 return scaleR(this.getValue(year, keys.population));
             }
 
-            upperBound(years, index, key) {
+            // Helper function which returns the index of the next higher year which is not NaN for the specified attribute.
+            _upperBound(years, index, key) {
                 if (index == years.length - 1) {
                     return -1;
                 }
@@ -283,7 +297,8 @@
                 return index;
             }
 
-            lowerBound(years, index, key) {
+            // Helper function which returns the index of the next lower year which is not NaN for the specified attribute.
+            _lowerBound(years, index, key) {
                 if (index == 0) {
                     return -1;
                 }
@@ -291,36 +306,36 @@
                 return index;
             }
 
+            // Returns the value for the specified key for the given year. If the year has no value for the given key it is linearly interpolated between its neighbors which have keys. If one neighbor is mising the other is returned as result.
             getValue(year, key) {
                 if (!isNaN(this.yearlyData[year][key])) {
                     return this.yearlyData[year][key];
                 }
                 var years = Object.keys(this.yearlyData);
+                // Getting the index of the current year
                 var index = years.indexOf(year.toString());
-                var lowerBound = this.upperBound(years, index, key);
-                var upperBound = this.lowerBound(years, index, key);
+                // Finding both bounds
+                var lowerBound = this._upperBound(years, index, key);
+                var upperBound = this._lowerBound(years, index, key)
+                // Check if any of them is not present
                 if (lowerBound == -1) {
                     return this.yearlyData[years[upperBound]][key];
                 }
                 if (upperBound == -1) {
                     return this.yearlyData[years[lowerBound]][key];
                 }
+                // retrieve values
                 var lowerYear = years[lowerBound];
                 var upperYear = years[upperBound];
                 var lowerValue, upperValue;
-                try {
-                    lowerValue = this.yearlyData[lowerYear][key];
-                    upperValue = this.yearlyData[upperYear][key];
-                } catch (e) {
-                    console.log(years);
-                    console.log(lowerBound, lowerYear, lowerValue);
-                    console.log(upperBound, upperYear, upperValue);
-                    throw e;
-                }
+                lowerValue = this.yearlyData[lowerYear][key];
+                upperValue = this.yearlyData[upperYear][key];
+                // Linear interpolation
                 var result = (year - lowerYear) / (upperYear - lowerYear) * (upperValue - lowerValue) + lowerValue;
                 return result;
             }
 
+            // Returns the highest value for a given key
             getMax(key) {
                 var max = -1;
                 for (var year in this.yearlyData) {
@@ -331,6 +346,7 @@
                 return max;
             }
 
+            // Returns the lowest value for a given key
             getMin(key) {
                 var min = -1;
                 for (var year in this.yearlyData) {
@@ -340,42 +356,30 @@
                 }
                 return min;
             }
-
+            
+            // Returns true of data for a given year is provided
             hasYear(year) {
                 return year in this.yearlyData;
             }
         }
 
-        function getMin(countries, key) {
-            return Math.min(...countries.map(country => country.getMin(key)));
-        }
-
-        function getMax(countries, key) {
-            return Math.max(...countries.map(country => country.getMax(key)));
-        }
-
-        function groupBy(array, key) {
-            return array.reduce(function (rv, x) {
-                (rv[x[key]] = rv[x[key]] || []).push(x);
-                return rv;
-            }, {});
-        };
-
-        function onlyUnique(value, index, self) {
-            return self.indexOf(value) === index;
-        }
-
-        var minComp, maxComp, minGdp, maxGdp, minYear, maxYear, year, yearScale, controlHandle, playButton;
-        var countries;
+        // Some variables which are set later on
+        var minComp, maxComp, minGdp, maxGdp, minYear, maxYear, year, yearScale, controlHandle, playButton, countries;
+        // Color map which maps country classification to a color
         var colorMap = {};
 
+        // Loading the dataset
         d3.csv('./GCI_CompleteData2.csv', data => {
+            // Group dataset by country
             var grouped = groupBy(data, keys.country);
-            countries = []
+            // Construct all countries
+            countries = [];
             for (var name in grouped) {
                 countries.push(new Country(grouped[name]));
             }
-
+            
+            // Define lowre and upper bounds
+            // The hardcoded results are personally chosen to provide a better overview
             minGdp = getMin(countries, keys.gdp);
             maxGdp = getMax(countries, keys.gdp);
             minGdp = 50;
@@ -389,10 +393,7 @@
             minYear = 2007;
             maxYear = 2017;
 
-            // var data = Object.values(countries[0].yearlyData).map(d => [d.year - minYear, d.global_competitiveness]);
-            // console.log(data);
-
-            // Setting up the axis
+            // Setting up the axis scales
             xScale.domain([minGdp, maxGdp]);
             yScale.domain([minComp, maxComp]);
 
@@ -409,7 +410,7 @@
                 .attr("id", "y-axis")
                 .call(yAxis);
 
-            // Create the pilalr x axis
+            // Create the pillar x axis
             pxScale.domain([0, Math.ceil(highestPillar)]);
             pxAxis.ticks(Math.ceil(highestPillar));
 
@@ -434,7 +435,7 @@
                 .text("Value");
 
             // Setting up the colors
-            var regions = countries.map(c => c.classification).filter(onlyUnique);
+            var regions = countries.map(c => c.classification).filter(unique);
             for (var i = 0; i < regions.length; i++) {
                 colorMap[regions[i]] = ColorPalett[i];
             }
@@ -458,10 +459,11 @@
 
 
             //Setup control
+            //Create scale for years
             yearScale = d3.scaleLinear()
                 .domain([minYear, maxYear])
                 .range([0, control.width - control.lineOffset]);
-
+            //Create slider
             var slider = control.canvas.append("g")
                 .attr("transform", `translate(50, 0)`)
                 .classed("slider", true);
@@ -477,12 +479,12 @@
                         if (newYear != year)
                             generateVis(newYear, selection);
                     }));
-
+            // Create control handle
             controlHandle = slider.append("circle")
                 .attr("cx", 0)
                 .attr("cy", 0)
                 .attr("r", 15);
-
+            // Create slider legend
             slider.append("g")
                 .attr("transform", `translate(0, 36)`)
                 .selectAll("text")
@@ -492,6 +494,7 @@
                 .attr("x", yearScale)
                 .text(d => d);
 
+            // Create the play/pause button
             playButton = control.canvas.append("g")
                 .classed("play-btn", true);
 
@@ -504,52 +507,64 @@
                 .on('click', () => {
                     playPause();
                 });
-
+            // Generate first visualization
             generateVis(minYear, []);
         });
 
+        // Maps an gdp value to its position on the x-axis. Mind the logartihmic scale
         function scaleX(gdp) {
             return plot.width * Math.log(gdp / minGdp) / Math.log(maxGdp / minGdp);
         }
 
+        // Maps a competitiveness score to its position on the y-axis.
         function scaleY(comp) {
             return plot.height - plot.height * (comp - minComp) / (maxComp - minComp);
         }
 
+        // Returns the radius of a circle where the circle area is proportional to the provided population.
         function scaleR(population) {
             return Math.sqrt(population) / (750000 / plot.width);
         }
 
+        // Returns the color for the stroke around bubbles. If a bubble is selected its stroke should change.
         function strokeColor(country) {
             return isSelected(country) ?
                 SelectionColors[selection.length - 1 - selection.indexOf(country)] :
                 "black";
         }
 
+        // Function which is called whenever the user hovers over any bubble.
+        // newHoveredYear is only used when the uesr hovers over history bubbles.
         function startHover(country, newHoveredYear) {
+            // If years are identical set to no year provided.
             if (newHoveredYear == year) {
                 hoveredYear = null;
             } else {
                 hoveredYear = newHoveredYear;
             }
+            hovered = country;
+            // Set hovered state for the hovered item
             country.getCircle(hoveredYear)
                 .classed("hovered", true);
             country.getLabel(hoveredYear)
                 .classed("hovered", true);
+            // Blen out all other items
             plotPoints.selectAll("circle")
                 .classed("blend-out", true);
             historyPoints.selectAll("circle")
                 .classed("blend-out", true);
             country.getCircle(hoveredYear)
                 .classed("blend-out", false);
-
-            hovered = country;
+            
+            // Draw the reading help
             drawReadingHelp();
         }
 
+        // This function is called whenever a country loses its hover state.
         function stopHover(country) {
             hovered = null;
             hoveredYear = null;
+            // Remove all hovered and blend-out states
             plotPoints.selectAll("circle")
                 .classed("hovered", false)
                 .classed("blend-out", false);
@@ -566,19 +581,17 @@
             drawReadingHelp();
         }
 
+        // Variables for hover and selection
         var hoveredYear = null;
         var hovered = null;
-        var selected = undefined;
         var selection = [];
 
-        function isIn(array, value) {
-            return array.indexOf(value) > -1;
-        }
-
+        // Returns true if the provided country is currently selected
         function isSelected(country) {
             return isIn(selection, country);
         }
 
+        // Removes an country from selection
         function removeSelection(country) {
             if (isSelected(country)) {
                 selection.splice(selection.indexOf(country), 1);
@@ -586,6 +599,7 @@
             }
         }
 
+        // Adds a country to selection. If the selection exceeds its limit the first item will be removed.
         function addSeelction(country) {
             if (!isSelected(country)) {
                 if (selection.length >= SelectionColors.length) {
@@ -596,6 +610,7 @@
             }
         }
 
+        // Handles what happens if a user clicks on a country
         function onClickCountry(country) {
             if (isSelected(country)) {
                 removeSelection(country);
@@ -603,24 +618,30 @@
                 addSeelction(country);
             }
         }
-
+        
+        // Generates the whole visualization with all subvisualizations
         function generateVis(newYear, newSelection) {
+            // If the year is not valid return
             if (newYear < minYear || newYear > maxYear)
                 return;
             selection = newSelection;
             year = newYear;
+            // Update control handle position
             controlHandle.transition()
                 .attr("cx", yearScale(year));
 
+            // Draw all sub visualizations
             drawMainVis();
             drawPillars();
             drawHistory();
             drawReadingHelp();
         }
 
+        // Returns the length of the line for the label for the specified year and country
         function labelPointerPos(country, year) {
             var r = country.radius(year);
-            return Math.sqrt(2 * r * r) - r;
+            var l = Math.sqrt(2 * r * r) - r;
+            return l;
         }
 
         function drawMainVis() {
@@ -673,10 +694,10 @@
             var pad_y = 5;
 
             entered.insert("rect", ":first-child")
-                .attr("width", c => c.labelText.node().getBBox().width + pad_x)
-                .attr("height", c => c.labelText.node().getBBox().height + pad_y)
-                .attr("x", c => -(c.labelText.node().getBBox().width + pad_x / 2))
-                .attr("y", c => -(c.labelText.node().getBBox().height + pad_y) / 2)
+                .attr("width", c => c.getLabelBB(null).width + pad_x)
+                .attr("height", c => c.getLabelBB(null).height + pad_y)
+                .attr("x", c => -(c.getLabelBB(null).width + pad_x / 2))
+                .attr("y", c => -(c.getLabelBB(null).height + pad_y) / 2)
                 .attr("rx", 3)
                 .attr("ry", 3);
 
@@ -861,10 +882,10 @@
             var pad_y = 5;
 
             entered.insert("rect", ":first-child")
-                .attr("width", d => getLabelBox(d[keys.year]).width + pad_x)
-                .attr("height", d => getLabelBox(d[keys.year]).height + pad_y)
-                .attr("x", d => -(getLabelBox(d[keys.year]).width + pad_x / 2))
-                .attr("y", d => -(getLabelBox(d[keys.year]).height + pad_y) / 2)
+                .attr("width", d => d.country.getLabelBB(d[keys.year]).width + pad_x)
+                .attr("height", d => d.country.getLabelBB(d[keys.year]).height + pad_y)
+                .attr("x", d => -(d.country.getLabelBB(d[keys.year]).width + pad_x / 2))
+                .attr("y", d => -(d.country.getLabelBB(d[keys.year]).height + pad_y) / 2)
                 .attr("rx", 3)
                 .attr("ry", 3);
 
@@ -901,6 +922,35 @@
                 timer = -1;
                 playButton.select("text").text("▶");
             }
+        }
+        
+        // Returns the minimal value across all countries for the given key
+        function getMin(countries, key) {
+            return Math.min(...countries.map(country => country.getMin(key)));
+        }
+
+        // Returns the maximal value across all countries for the given key
+        function getMax(countries, key) {
+            return Math.max(...countries.map(country => country.getMax(key)));
+        }
+
+        // Groups an array based on the provided key
+        // This is copied from stackoverflow
+        function groupBy(array, key) {
+            return array.reduce(function (rv, x) {
+                (rv[x[key]] = rv[x[key]] || []).push(x);
+                return rv;
+            }, {});
+        };
+
+        // This filters an array to only contain only distinct values
+        function unique(value, index, self) {
+            return self.indexOf(value) === index;
+        }
+        
+        // Helper function that returns true if a value is present in an array
+        function isIn(array, value) {
+            return array.indexOf(value) > -1;
         }
     </script>
 </body>
