@@ -277,6 +277,8 @@
                 var x = scaleX(this.getValue(year, keys.gdp));
                 var y = scaleY(this.getValue(year, keys.competitiveness));
                 var r = scaleR(this.getValue(year, keys.population));
+                r = r + 12;
+                r = Math.sqrt(r*r/2);
                 return `translate(${x-r}, ${y-r})`;
             }
 
@@ -637,14 +639,10 @@
             drawReadingHelp();
         }
 
-        // Returns the length of the line for the label for the specified year and country
-        function labelPointerPos(country, year) {
-            var r = country.radius(year);
-            var l = Math.sqrt(2 * r * r) - r;
-            return l;
-        }
-
+        // Calling this function draws the main visualization (bubble plot without history)
         function drawMainVis() {
+            // This filters the active countries on whether they have data for the current year available.
+            // I also sort the countries by their population so bigger countries appear behind smaller ones.
             var currentCountries = countries.filter(country =>
                     country.hasYear(year))
                 .sort((c1, c2) =>
@@ -697,15 +695,9 @@
                 .attr("width", c => c.getLabelBB(null).width + pad_x)
                 .attr("height", c => c.getLabelBB(null).height + pad_y)
                 .attr("x", c => -(c.getLabelBB(null).width + pad_x / 2))
-                .attr("y", c => -(c.getLabelBB(null).height + pad_y) / 2)
+                .attr("y", c => -(c.getLabelBB(null).height + pad_y)/2)
                 .attr("rx", 3)
                 .attr("ry", 3);
-
-            entered.insert("line", ":first-child")
-                .attr("x1", 0)
-                .attr("y1", 0)
-                .attr("x2", c => labelPointerPos(c, year))
-                .attr("y2", c => labelPointerPos(c, year));
 
             points.exit()
                 .transition()
@@ -888,12 +880,6 @@
                 .attr("y", d => -(d.country.getLabelBB(d[keys.year]).height + pad_y) / 2)
                 .attr("rx", 3)
                 .attr("ry", 3);
-
-            entered.insert("line", ":first-child")
-                .attr("x1", 0)
-                .attr("y1", 0)
-                .attr("x2", d => labelPointerPos(selected, d[keys.year]))
-                .attr("y2", d => labelPointerPos(selected, d[keys.year]));
 
             hisPoints.exit()
                 .interrupt()
