@@ -855,7 +855,7 @@
             // Select all pillars
             var pillars = pillarBars.selectAll("rect")
                 .data(pillarData, p => p.pillar + p.country.name);
-
+            // Select all pillar labels
             var labels = pillarLabels.selectAll("text")
                 .data(pillarData, p => p.pillar + p.country.name);
 
