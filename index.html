@@ -265,6 +265,7 @@
             }
 
             // Return the transform for label at the given year
+            // This is the transform for the bubble but shifted to the top left by the radius and a constant offset.
             labelTransform(year) {
                 var x = scaleX(this.getValue(year, keys.gdp));
                 var y = scaleY(this.getValue(year, keys.competitiveness));
