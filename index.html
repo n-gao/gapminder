@@ -177,9 +177,10 @@
 
         // Define container for several elements in the pillar plot
         var pillarBars = pillarPlot.canvas.append("g").attr("id", "pillar-bars");
+        var pillarLabels = pillarPlot.canvas.append("g").attr("id", "pillar-labels");
         var pillarLegend = pillarPlot.svg.append("g")
             .attr("id", "pillar-legend")
-            .attr("transform", "translate(" + pillarPlot.legend_margin.left + "," + pillarPlot.legend_margin.top + ")");
+            .attr("transform", `translate(${pillarPlot.legend_margin.left}, ${pillarPlot.legend_margin.top})`);
         // Add title for this plot
         pillarPlot.svg.append("text")
             .text("Competitiveness breakdown")
@@ -855,16 +856,21 @@
             var pillars = pillarBars.selectAll("rect")
                 .data(pillarData, p => p.pillar + p.country.name);
 
+            var labels = pillarLabels.selectAll("text")
+                .data(pillarData, p => p.pillar + p.country.name);
+
             // Calculate the height of each pillar
             var pillarHeight = pillarPlot.height / 15 / nSelection;
+
+            // Function which calculates the y position of each bawr
+            const y = (p, i) => p.index * pillarPlot.height / 12 + pillarHeight * p.country_index + pillarHeight * nSelection / 8;
 
             // add new pillars
             pillars.enter()
                 .append("rect")
                 .classed("pillar", true)
-                .attr("x", 0)
-                .attr("y", (p, i) => p.index * pillarPlot.height / 12 + pillarHeight * p.country_index + pillarHeight *
-                    nSelection / 8)
+                .attr("x", 0.5) // moving it 0.5 to the right to compensate for the border
+                .attr("y", y)
                 .attr("stroke", "black")
                 // Update the old and new pillars
                 .merge(pillars)
@@ -873,9 +879,7 @@
                 .delay((p, i) => i * 10)
                 .duration(150)
                 .attr("height", pillarHeight)
-                .attr("x", 0.5) // moving it 0.5 to the right to compensate for the border
-                .attr("y", (p, i) => p.index * pillarPlot.height / 12 + pillarHeight * p.country_index + pillarHeight *
-                    nSelection / 8)
+                .attr("y", y)
                 .attr("width", p => p.value * pillarPlot.width / maxPillar - 1); // -1 to compensate the stroke border
 
             // Remove old pillars
@@ -885,6 +889,21 @@
                 .duration(150)
                 .attr("width", 0)
                 .remove();
+
+            // Add new labels
+            labels.enter()
+                .append("text")
+                .attr("x", 8)
+                .attr("y", y)
+                // Update old and new labels
+                .merge(labels)
+                .transition()
+                .duration(200)
+                .attr("y", (p, i) => y(p, i) -10*nSelection + 36)
+                .text(p => Math.round(p.value*100)/100);
+            // Remove labels of removed selection
+            labels.exit()
+                .remove()
 
             // Draw legend
             // Select the rectangles representing the countires
