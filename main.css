@@ -2,8 +2,9 @@
     font-family: sans-serif;
 }
 
+#first-row,
 #visualizations {
-    display: block;
+    display: inline-block;
     overflow: hidden;
     white-space: no-wrap;
     /* float: left; */
@@ -14,7 +15,7 @@ svg {
 }
 
 .title {
-    font-size: 18pt;
+    font-size: 15pt;
     text-anchor: middle;
     transform: translate(0, 24px);
 }
@@ -106,6 +107,10 @@ svg {
 
 .country-circle.blend-out {
     opacity: 0.5;
+}
+
+.country-circle.blend-out.selected {
+    opacity: 0.75;
 }
 
 .country-circle.country-history {

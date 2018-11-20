@@ -11,7 +11,11 @@
 </head>
 
 <body>
-    <div id="visualizations">
+    <div id="first-row">
+        <div id="visualizations">
+        </div>
+        <select multiple id="country-select" size="41">
+        </select>
     </div>
     <script>
         // Setting the used color pallets for different regions
@@ -20,8 +24,8 @@
         const SelectionColors = ['#8dd3c7', '#ffffb3'];
         // Defining the dimensions of the main plot
         const plot = {
-            outer_width: 1000,
-            outer_height: 750,
+            outer_width: 900,
+            outer_height: 700,
             margin: {
                 top: 10,
                 right: 10,
@@ -38,7 +42,7 @@
             outer_height: plot.outer_height,
             outer_width: 400,
             margin: {
-                top: 90,
+                top: 80,
                 right: 25,
                 bottom: 50,
                 left: 190
@@ -119,7 +123,7 @@
         generateSvgCanvas(pillarPlot, "#visualizations");
         generateSvgCanvas(control, "body");
         // Set the width of the visualization container to ensure that the main plot and pillar plot are displayed in one row
-        d3.select("#visualizations").style("width", plot.outer_width + pillarPlot.outer_width + 'px');
+        d3.select("#first-row").style("width", plot.outer_width + pillarPlot.outer_width + 200 + 'px');
 
         // Set up the scale to be used on the x axis
         const xScale = d3.scaleLog()
@@ -211,6 +215,11 @@
                     data.country = this;
                     this.yearlyData[year] = data;
                 });
+            }
+
+            // Get the id of select option
+            get optionId() {
+                return `option_${this.name.replace(/[^a-zA-Z]/g, "")}`;
             }
 
             // Get the main bubble
@@ -360,7 +369,8 @@
         }
 
         // Some variables which are set later on
-        var minComp, maxComp, minGdp, maxGdp, minYear, maxYear, maxPillar, year, yearScale, controlHandle, playButton, countries;
+        var minComp, maxComp, minGdp, maxGdp, minYear, maxYear, maxPillar, year, yearScale, controlHandle, playButton,
+            countries;
         // Color map which maps country classification to a color
         var colorMap = {};
 
@@ -374,8 +384,19 @@
                 countries.push(new Country(grouped[name]));
             }
 
-            // Define lowre and upper bounds
-            // The hardcoded results are personally chosen to provide a better overview
+            d3.select("#country-select").selectAll("option")
+                .data(countries, c => c == undefined ? c : c.name)
+                .enter()
+                .append("option")
+                .attr("id", c => c.optionId)
+                .text(c => c.name)
+                .on('click', c => {
+                    onClickCountry(c);
+                })
+            d3.select("#country-select").on('change', updateCountryList);
+
+            // Define lower and upper bounds
+            // The hardcoded results are personally chosen based on the calculated one to include margin on all sides
             minGdp = getMin(countries, keys.gdp);
             maxGdp = getMax(countries, keys.gdp);
             minGdp = 50;
@@ -548,8 +569,8 @@
             // Blen out all other items
             plotPoints.selectAll("circle")
                 .classed("blend-out", true);
-            historyPoints.selectAll("circle")
-                .classed("blend-out", true);
+            // historyPoints.selectAll("circle")
+            //     .classed("blend-out", true);
             country.getCircle(hoveredYear)
                 .classed("blend-out", false);
 
@@ -564,11 +585,11 @@
             // Remove all hovered and blend-out states
             plotPoints.selectAll("circle")
                 .classed("hovered", false)
-                .classed("blend-out", false);
+            // .classed("blend-out", false);
 
             historyPoints.selectAll("circle")
                 .classed("hovered", false)
-                .classed("blend-out", false);
+            // .classed("blend-out", false);
 
             plotLabels.selectAll("g")
                 .classed("hovered", false);
@@ -576,6 +597,7 @@
                 .classed("hovered", false);
 
             drawReadingHelp();
+            drawMainVis();
         }
 
         // Variables for hover and selection
@@ -597,7 +619,7 @@
         }
 
         // Adds a country to selection. If the selection exceeds its limit the first item will be removed.
-        function addSeelction(country) {
+        function addSelection(country) {
             if (!isSelected(country)) {
                 if (selection.length >= SelectionColors.length) {
                     selection.shift();
@@ -612,7 +634,7 @@
             if (isSelected(country)) {
                 removeSelection(country);
             } else {
-                addSeelction(country);
+                addSelection(country);
             }
         }
 
@@ -627,11 +649,21 @@
             controlHandle.transition()
                 .attr("cx", yearScale(year));
 
+            // Updating the selection box for countries
+            updateCountryList();
+
             // Draw all sub visualizations
             drawMainVis();
             drawPillars();
             drawHistory();
             drawReadingHelp();
+        }
+
+        // This function sets the selection of the country select equal to the javascript selection
+        function updateCountryList() {
+            d3.select("#country-select").selectAll("option")
+                .data(countries, c => c == undefined ? c : c.name)
+                .property("selected", isSelected);
         }
 
         // Calling this function draws the main visualization (bubble plot without history)
@@ -659,6 +691,7 @@
                 .style("fill", country => colorMap[country.classification])
                 // Set attributes for new and old bubbles
                 .merge(points)
+                .classed("blend-out", selection.length > 0)
                 .classed('selected', isSelected)
                 .transition()
                 .duration(200)
@@ -790,7 +823,7 @@
                 .on("mouseover", data => startHover(data.country, data[keys.year]))
                 .on("mouseout", data => stopHover(data.country))
                 // Increase saturation the more recent data is
-                .style("opacity", data => (data[keys.year] - minYear) / (maxYear - minYear) / 2 + 0.4)
+                // .style("opacity", data => (data[keys.year] - minYear) / (maxYear - minYear) / 2 + 0.4)
                 // Delay appearance in chronological order such that the most recent data pop ups last
                 .transition()
                 .delay((d, i) => i * 50)
@@ -863,7 +896,8 @@
             var pillarHeight = pillarPlot.height / 15 / nSelection;
 
             // Function which calculates the y position of each bawr
-            const y = (p, i) => p.index * pillarPlot.height / 12 + pillarHeight * p.country_index + pillarHeight * nSelection / 8;
+            const y = (p, i) => p.index * pillarPlot.height / 12 + pillarHeight * p.country_index + pillarHeight *
+                nSelection / 8;
 
             // add new pillars
             pillars.enter()
@@ -899,8 +933,8 @@
                 .merge(labels)
                 .transition()
                 .duration(200)
-                .attr("y", (p, i) => y(p, i) -10*nSelection + 36)
-                .text(p => Math.round(p.value*100)/100);
+                .attr("y", (p, i) => y(p, i) - 10 * nSelection + 36)
+                .text(p => Math.round(p.value * 100) / 100);
             // Remove labels of removed selection
             labels.exit()
                 .remove()
