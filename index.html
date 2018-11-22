@@ -24,7 +24,7 @@
         const SelectionColors = ['#8dd3c7', '#ffffb3'];
         // Defining the dimensions of the main plot
         const plot = {
-            outer_width: 900,
+            outer_width: 1000,
             outer_height: 700,
             margin: {
                 top: 10,
@@ -483,7 +483,7 @@
                 .range([0, control.width - control.lineOffset]);
             //Create slider
             var slider = control.canvas.append("g")
-                .attr("transform", `translate(50, 0)`)
+                .attr("transform", `translate(${control.lineOffset}, 0)`)
                 .classed("slider", true);
 
             slider.append("line")
@@ -788,7 +788,7 @@
                 .attr("y", d => d == 0 ? y : plot.height)
                 .text(d => Math.round((d == 0 ? y_val : x_val) * 10) / 10)
                 .attr("text-anchor", d => d == 0 ? "end" : "middle")
-                .attr("transform", d => `translate(${8*(d-1)}, ${d*30})`);
+                .attr("transform", d => `translate(${8*(d-1)}, ${d*35})`);
 
             // Remove lines and labels if nothing is selected
             lines.exit().remove();
