@@ -14,6 +14,15 @@ svg {
     display: inline-block;
 }
 
+div {
+    display: inline-block;
+}
+
+h3 {
+    font-weight: normal;
+    font-size: 15pt;
+}
+
 .title {
     font-size: 15pt;
     text-anchor: middle;
@@ -96,13 +105,14 @@ svg {
     opacity: 1;
 }
 
+.country-circle.selected.hovered,
 .country-circle.hovered {
     stroke: #8dd3c7 !important;
-    stroke-width: 5px;
+    stroke-width: 6px;
 }
 
 .country-circle.selected {
-    stroke-width: 7px;
+    stroke-width: 5px;
 }
 
 .country-circle.blend-out {

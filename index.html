@@ -14,17 +14,20 @@
     <div id="first-row">
         <div id="visualizations">
         </div>
-        <select multiple id="country-select" size="41">
-        </select>
+        <div>
+            <h3>Country Selection</h3>
+            <select multiple id="country-select" size="38">
+            </select>
+        </div>
     </div>
     <script>
         // Setting the used color pallets for different regions
         const ColorPalett = ['#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5', '#d9d9d9'];
         // Setting colors for selection
-        const SelectionColors = ['#8dd3c7', '#ffffb3'];
+        const SelectionColors = ['#8dd3c7', '#efefa7'];
         // Defining the dimensions of the main plot
         const plot = {
-            outer_width: 1000,
+            outer_width: 800,
             outer_height: 700,
             margin: {
                 top: 10,
@@ -375,7 +378,7 @@
         var colorMap = {};
 
         // Loading the dataset
-        d3.csv('./GCI_CompleteData2.csv', data => {
+        d3.csv('./GCI_CompleteData3.csv', data => {
             // Group dataset by country
             var grouped = groupBy(data, keys.country);
             // Construct all countries
@@ -397,12 +400,15 @@
 
             // Define lower and upper bounds
             // The hardcoded results are personally chosen based on the calculated one to include margin on all sides
+            console.log(countries);
             minGdp = getMin(countries, keys.gdp);
             maxGdp = getMax(countries, keys.gdp);
+            // console.log(minGdp, maxGdp);
             minGdp = 50;
-            maxGdp = 4000000;
+            maxGdp = 200000;
             minComp = getMin(countries, keys.competitiveness);
             maxComp = getMax(countries, keys.competitiveness);
+            console.log(minComp, maxComp);
             minComp = 2.5;
             maxComp = 6;
             minYear = getMin(countries, keys.year);
@@ -541,7 +547,7 @@
 
         // Returns the radius of a circle where the circle area is proportional to the provided population.
         function scaleR(population) {
-            return Math.sqrt(population) / (750000 / plot.width);
+            return Math.sqrt(population) / (650000 / plot.width);
         }
 
         // Returns the color for the stroke around bubbles. If a bubble is selected its stroke should change.
@@ -738,7 +744,8 @@
                 .attr("x", c => -(c.getLabelBB(null).width + pad_x / 2))
                 .attr("y", c => -(c.getLabelBB(null).height + pad_y) / 2)
                 .attr("rx", 3)
-                .attr("ry", 3);
+                .attr("ry", 3)
+                .attr("fill", "white");
 
             // Remove labels for countries without data
             labels.exit()
