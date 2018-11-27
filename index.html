@@ -171,7 +171,7 @@
             .attr("transform",
                 `translate(${plot.width / 2}, ${plot.height + plot.margin.top + 40})`)
             .style("text-anchor", "middle")
-            .text("GDP");
+            .text("Gross Domestic Product (GDP)");
 
         // Setup the y label
         plot.canvas.append("text")
@@ -180,7 +180,7 @@
             .attr("x", 0 - (plot.height / 2))
             .attr("dy", "1em")
             .style("text-anchor", "middle")
-            .text("Gloabl competitiveness");
+            .text("Gloabl Competitiveness");
 
         // Define container for several elements in the pillar plot
         var pillarBars = pillarPlot.canvas.append("g").attr("id", "pillar-bars");
@@ -190,7 +190,7 @@
             .attr("transform", `translate(${pillarPlot.legend_margin.left}, ${pillarPlot.legend_margin.top})`);
         // Add title for this plot
         pillarPlot.svg.append("text")
-            .text("Competitiveness breakdown")
+            .text("Competitiveness Breakdown")
             .classed("title", true)
             .attr("x", pillarPlot.outer_width / 2)
             .attr("y", pillarPlot.title_margin.top);
