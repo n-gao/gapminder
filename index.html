@@ -378,7 +378,7 @@
         var colorMap = {};
 
         // Loading the dataset
-        d3.csv('./GCI_CompleteData3.csv', data => {
+        d3.csv('./GCI_CompleteData4.csv', data => {
             // Group dataset by country
             var grouped = groupBy(data, keys.country);
             // Construct all countries
@@ -400,15 +400,12 @@
 
             // Define lower and upper bounds
             // The hardcoded results are personally chosen based on the calculated one to include margin on all sides
-            console.log(countries);
             minGdp = getMin(countries, keys.gdp);
             maxGdp = getMax(countries, keys.gdp);
-            // console.log(minGdp, maxGdp);
             minGdp = 50;
             maxGdp = 200000;
             minComp = getMin(countries, keys.competitiveness);
             maxComp = getMax(countries, keys.competitiveness);
-            console.log(minComp, maxComp);
             minComp = 2.5;
             maxComp = 6;
             minYear = getMin(countries, keys.year);
