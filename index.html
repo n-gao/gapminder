@@ -419,14 +419,14 @@
             yScale.domain([minComp, maxComp]);
 
             // Create the x-axis
-            plot.canvas.append("g")
+            plot.canvas.insert("g", ":first-child")
                 .attr("class", "axis")
                 .attr("id", "x-axis")
                 .attr("transform", `translate(0, ${plot.height})`)
                 .call(xAxis);
 
             // Create the y axis
-            plot.canvas.append("g")
+            plot.canvas.insert("g", ":first-child")
                 .attr("class", "axis")
                 .attr("id", "y-axis")
                 .call(yAxis);
