@@ -134,3 +134,57 @@ h3 {
 .axis text {
     font-size: 10pt;
 }
+
+select[multiple] option:checked {
+    background: linear-gradient(90deg, #88f 0%, #66e 100%);
+    color: white !important;
+}
+
+select[multiple] option::before {
+    content: '☐ ';
+}
+
+select[multiple] option:checked::before {
+    content: '☑ ';
+}
+
+select[multiple] option {
+    padding: 6px;
+}
+
+select[multiple] {
+    border-radius: 8px;
+    padding: 0;
+    color: white;
+}
+
+select[multiple] option:not(:checked) {
+    color: black;
+}
+
+select[multiple]:focus {
+    outline:0;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    border-radius: 8px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+    border-radius: 8px;
+}
+ 
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: #888; 
+    border-radius: 8px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: #999; 
+    border-radius: 8px;
+}

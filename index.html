@@ -14,9 +14,9 @@
     <div id="first-row">
         <div id="visualizations">
         </div>
-        <div>
+        <div style="vertical-align: top;">
             <h3>Country Selection</h3>
-            <select multiple id="country-select" size="38">
+            <select multiple id="country-select" size="22">
             </select>
         </div>
     </div>
@@ -55,7 +55,7 @@
                 left: 20
             },
             title_margin: {
-                top: 10,
+                top: 14,
             },
             width: 0,
             height: 0,
@@ -799,7 +799,7 @@
             values.exit().remove();
         }
 
-        var lastHisLength = 0;
+        var lastHisData = [];
         // Calling this function draws the trace bubbles for the most recent selected country to the main visualization
         function drawTrace() {
             // Most recently selected country
@@ -817,6 +817,7 @@
             var hisLabels = traceLabels.selectAll("g")
                 .data(hisData, data => data.country.name + data[keys.year]);
 
+            lastHisLength = hisData.filter(d => lastHisData.indexOf(d) !== -1).length;
             // Add new bubbles
             hisPoints.enter()
                 .append("circle")
@@ -868,7 +869,7 @@
                 .remove();
             // Remove trace labels
             hisLabels.exit().remove();
-            lastHisLength = hisData.length;
+            lastHisData = hisData;
         }
 
         // Draws the second visualization to display the individual pillars
