@@ -79,8 +79,8 @@ h3 {
     opacity: 0;
     pointer-events: none;
     font-weight: 700;
-    alignment-baseline: central;
-    dominant-baseline: central;
+    /* alignment-baseline: central;
+    dominant-baseline: central; */
 }
 
 .country-label rect {
@@ -154,6 +154,7 @@ select[multiple] option {
 
 select[multiple] {
     border-radius: 8px;
+    border: 1px solid rgb(169, 169, 169);
     padding: 0;
     color: white;
 }
@@ -162,8 +163,9 @@ select[multiple] option:not(:checked) {
     color: black;
 }
 
-select[multiple]:focus {
-    outline:0;
+select[multiple]:focus,
+select[multiple] option:focus {
+    outline: 0;
 }
 
 ::-webkit-scrollbar {
@@ -188,3 +190,4 @@ select[multiple]:focus {
     background: #999; 
     border-radius: 8px;
 }
+

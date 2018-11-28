@@ -11,6 +11,9 @@
 </head>
 
 <body>
+    <div class="hide-chrome">
+        Best viewed in Chrome.
+    </div>
     <div id="first-row">
         <div id="visualizations">
         </div>
@@ -21,6 +24,10 @@
         </div>
     </div>
     <script>
+        if (navigator.appVersion.indexOf("Chrome/") != -1) {
+            d3.selectAll(".hide-chrome").remove();
+        }   
+
         // Setting the used color pallets for different regions
         const ColorPalett = ['#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5', '#d9d9d9'];
         // Setting colors for selection
@@ -729,7 +736,8 @@
 
             // Add text for new labels
             entered.append("text")
-                .text(c => c.name);
+                .text(c => c.name)
+                .attr("transform", "translate(0, 5)");
 
             var pad_x = 10;
             var pad_y = 5;
